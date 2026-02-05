@@ -3,24 +3,59 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+
+// Public Pages
 import Index from "./pages/Index";
+import About from "./pages/About";
+import Departments from "./pages/Departments";
+import Faculty from "./pages/Faculty";
+import Events from "./pages/Events";
+import Gallery from "./pages/Gallery";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+
+// Admin Pages
+import AdminLogin from "./pages/admin/AdminLogin";
+import Dashboard from "./pages/admin/Dashboard";
+import AdminDepartments from "./pages/admin/AdminDepartments";
+import AdminMessages from "./pages/admin/AdminMessages";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/departments" element={<Departments />} />
+            <Route path="/faculty" element={<Faculty />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/gallery" element={<Gallery />} />
+            <Route path="/contact" element={<Contact />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<Dashboard />} />
+            <Route path="/admin/departments" element={<AdminDepartments />} />
+            <Route path="/admin/homepage" element={<Dashboard />} />
+            <Route path="/admin/about" element={<Dashboard />} />
+            <Route path="/admin/faculty" element={<Dashboard />} />
+            <Route path="/admin/events" element={<Dashboard />} />
+            <Route path="/admin/gallery" element={<Dashboard />} />
+            <Route path="/admin/messages" element={<AdminMessages />} />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
