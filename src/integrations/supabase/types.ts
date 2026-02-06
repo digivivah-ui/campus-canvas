@@ -301,6 +301,51 @@ export type Database = {
         }
         Relationships: []
       }
+      members: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          designation: string
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          order_index: number | null
+          phone: string | null
+          photo_url: string | null
+          role_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          designation: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          order_index?: number | null
+          phone?: string | null
+          photo_url?: string | null
+          role_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          designation?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          order_index?: number | null
+          phone?: string | null
+          photo_url?: string | null
+          role_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
