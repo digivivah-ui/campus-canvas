@@ -22,16 +22,17 @@
    children: ReactNode;
  }
  
- const navItems = [
-   { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
-   { href: '/admin/homepage', label: 'Homepage', icon: FileText },
-   { href: '/admin/about', label: 'About', icon: FileText },
-   { href: '/admin/departments', label: 'Departments', icon: Building2 },
-   { href: '/admin/faculty', label: 'Faculty', icon: Users },
-   { href: '/admin/events', label: 'Events', icon: Calendar },
-   { href: '/admin/gallery', label: 'Gallery', icon: Image },
-   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
- ];
+const navItems = [
+  { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/admin/homepage', label: 'Homepage', icon: FileText },
+  { href: '/admin/about', label: 'About', icon: FileText },
+  { href: '/admin/departments', label: 'Departments', icon: Building2 },
+  { href: '/admin/members', label: 'Members', icon: Users },
+  { href: '/admin/faculty', label: 'Faculty', icon: Users },
+  { href: '/admin/events', label: 'Events', icon: Calendar },
+  { href: '/admin/gallery', label: 'Gallery', icon: Image },
+  { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
+];
  
  export function AdminLayout({ children }: AdminLayoutProps) {
    const { user, isAdmin, isLoading, signOut } = useAuth();
@@ -74,10 +75,10 @@
                <div className="bg-accent p-2 rounded-lg">
                  <GraduationCap className="h-6 w-6 text-accent-foreground" />
                </div>
-               <div>
-                 <h2 className="font-display font-bold text-primary-foreground">Admin Panel</h2>
-                 <p className="text-xs text-primary-foreground/60">Apex University</p>
-               </div>
+                <div>
+                  <h2 className="font-display font-bold text-primary-foreground">Admin Panel</h2>
+                  <p className="text-xs text-primary-foreground/60">MGCM, Ashta</p>
+                </div>
              </Link>
            </div>
  

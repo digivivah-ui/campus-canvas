@@ -37,12 +37,12 @@
              animate={{ opacity: 1, y: 0 }}
              className="max-w-3xl"
            >
-             <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
-               Our Faculty
-             </h1>
-             <p className="text-xl text-primary-foreground/80">
-               Meet our distinguished professors and researchers who are leaders in their fields.
-             </p>
+              <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
+                Our Faculty
+              </h1>
+              <p className="text-xl text-primary-foreground/80">
+                Meet our distinguished professors and educators who are experts in their fields and dedicated to student success.
+              </p>
            </motion.div>
          </div>
        </section>

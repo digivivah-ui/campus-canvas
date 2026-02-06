@@ -27,13 +27,13 @@
              animate={{ opacity: 1, y: 0 }}
              className="max-w-3xl"
            >
-             <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
-               Academic Departments
-             </h1>
-             <p className="text-xl text-primary-foreground/80">
-               Explore our diverse range of academic programs designed to prepare you
-               for a successful career in your chosen field.
-             </p>
+              <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
+                Our Programs
+              </h1>
+              <p className="text-xl text-primary-foreground/80">
+                Explore our diverse range of management and computer science programs designed to prepare you
+                for a successful career in your chosen field.
+              </p>
            </motion.div>
          </div>
        </section>

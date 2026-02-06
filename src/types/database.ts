@@ -103,18 +103,33 @@
    updated_at: string;
  }
  
- export interface Profile {
-   id: string;
-   user_id: string;
-   full_name: string | null;
-   email: string | null;
-   created_at: string;
-   updated_at: string;
- }
- 
- export interface UserRole {
-   id: string;
-   user_id: string;
-   role: 'admin' | 'member';
-   created_at: string;
- }
+export interface Profile {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserRole {
+  id: string;
+  user_id: string;
+  role: 'admin' | 'member';
+  created_at: string;
+}
+
+export interface Member {
+  id: string;
+  name: string;
+  designation: string;
+  role_type: 'principal' | 'director' | 'management' | 'staff';
+  photo_url: string | null;
+  bio: string | null;
+  email: string | null;
+  phone: string | null;
+  order_index: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}

@@ -1,15 +1,16 @@
  import { useEffect, useState } from 'react';
  import { motion } from 'framer-motion';
- import { Building2, Users, Calendar, Image, MessageSquare, Eye } from 'lucide-react';
- import { Link } from 'react-router-dom';
- import { AdminLayout } from '@/layouts/AdminLayout';
- import {
-   getAllDepartments,
-   getAllFaculty,
-   getAllEvents,
-   getAllGalleryImages,
-   getContactSubmissions,
- } from '@/services/api';
+import { Building2, Users, Calendar, Image, MessageSquare, Eye, UserCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { AdminLayout } from '@/layouts/AdminLayout';
+import {
+  getAllDepartments,
+  getAllFaculty,
+  getAllEvents,
+  getAllGalleryImages,
+  getContactSubmissions,
+  getAllMembers,
+} from '@/services/api';
  import { Skeleton } from '@/components/common/Skeleton';
  
  interface StatCardProps {
@@ -44,45 +45,49 @@
  }
  
  export default function Dashboard() {
-   const [stats, setStats] = useState({
-     departments: 0,
-     faculty: 0,
-     events: 0,
-     gallery: 0,
-     messages: 0,
-     unreadMessages: 0,
-   });
-   const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    departments: 0,
+    faculty: 0,
+    events: 0,
+    gallery: 0,
+    messages: 0,
+    unreadMessages: 0,
+    members: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      getAllDepartments(),
+      getAllFaculty(),
+      getAllEvents(),
+      getAllGalleryImages(),
+      getContactSubmissions(),
+      getAllMembers(),
+    ])
+      .then(([departments, faculty, events, gallery, messages, members]) => {
+        setStats({
+          departments: departments.length,
+          faculty: faculty.length,
+          events: events.length,
+          gallery: gallery.length,
+          messages: messages.length,
+          unreadMessages: messages.filter((m) => !m.is_read).length,
+          members: members.length,
+        });
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
  
-   useEffect(() => {
-     Promise.all([
-       getAllDepartments(),
-       getAllFaculty(),
-       getAllEvents(),
-       getAllGalleryImages(),
-       getContactSubmissions(),
-     ])
-       .then(([departments, faculty, events, gallery, messages]) => {
-         setStats({
-           departments: departments.length,
-           faculty: faculty.length,
-           events: events.length,
-           gallery: gallery.length,
-           messages: messages.length,
-           unreadMessages: messages.filter((m) => !m.is_read).length,
-         });
-       })
-       .catch(console.error)
-       .finally(() => setIsLoading(false));
-   }, []);
- 
-   const statCards = [
-     { title: 'Departments', value: stats.departments, icon: Building2, href: '/admin/departments' },
-     { title: 'Faculty Members', value: stats.faculty, icon: Users, href: '/admin/faculty' },
-     { title: 'Events', value: stats.events, icon: Calendar, href: '/admin/events' },
-     { title: 'Gallery Images', value: stats.gallery, icon: Image, href: '/admin/gallery' },
-     { title: 'Messages', value: stats.messages, icon: MessageSquare, href: '/admin/messages' },
-   ];
+  const statCards = [
+    { title: 'Departments', value: stats.departments, icon: Building2, href: '/admin/departments' },
+    { title: 'Members', value: stats.members, icon: UserCheck, href: '/admin/members' },
+    { title: 'Faculty', value: stats.faculty, icon: Users, href: '/admin/faculty' },
+    { title: 'Events', value: stats.events, icon: Calendar, href: '/admin/events' },
+    { title: 'Gallery', value: stats.gallery, icon: Image, href: '/admin/gallery' },
+    { title: 'Messages', value: stats.messages, icon: MessageSquare, href: '/admin/messages' },
+  ];
  
    return (
      <AdminLayout>
@@ -97,20 +102,20 @@
            </p>
          </div>
  
-         {/* Stats Grid */}
-         {isLoading ? (
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-             {[...Array(5)].map((_, i) => (
-               <Skeleton key={i} className="h-36" />
-             ))}
-           </div>
-         ) : (
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-             {statCards.map((card, index) => (
-               <StatCard key={card.title} {...card} index={index} />
-             ))}
-           </div>
-         )}
+          {/* Stats Grid */}
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-36" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+              {statCards.map((card, index) => (
+                <StatCard key={card.title} {...card} index={index} />
+              ))}
+            </div>
+          )}
  
          {/* Unread Messages Alert */}
          {stats.unreadMessages > 0 && (
@@ -146,13 +151,14 @@
            <h2 className="font-display text-xl font-semibold text-foreground mb-4">
              Quick Actions
            </h2>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-             {[
-               { label: 'Add Department', href: '/admin/departments' },
-               { label: 'Add Faculty', href: '/admin/faculty' },
-               { label: 'Create Event', href: '/admin/events' },
-               { label: 'Upload to Gallery', href: '/admin/gallery' },
-             ].map((action) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {[
+                { label: 'Add Department', href: '/admin/departments' },
+                { label: 'Add Member', href: '/admin/members' },
+                { label: 'Add Faculty', href: '/admin/faculty' },
+                { label: 'Create Event', href: '/admin/events' },
+                { label: 'Upload to Gallery', href: '/admin/gallery' },
+              ].map((action) => (
                <Link
                  key={action.label}
                  to={action.href}
