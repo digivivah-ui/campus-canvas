@@ -34,12 +34,12 @@
              animate={{ opacity: 1, y: 0 }}
              className="max-w-3xl"
            >
-             <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
-               Photo Gallery
-             </h1>
-             <p className="text-xl text-primary-foreground/80">
-               Explore moments captured at our campus events, activities, and celebrations.
-             </p>
+              <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
+                Campus Gallery
+              </h1>
+              <p className="text-xl text-primary-foreground/80">
+                Explore memorable moments from campus life, events, and celebrations at MGCM.
+              </p>
            </motion.div>
          </div>
        </section>

@@ -19,6 +19,10 @@ import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/AdminLogin";
 import Dashboard from "./pages/admin/Dashboard";
 import AdminDepartments from "./pages/admin/AdminDepartments";
+import AdminMembers from "./pages/admin/AdminMembers";
+import AdminFaculty from "./pages/admin/AdminFaculty";
+import AdminEvents from "./pages/admin/AdminEvents";
+import AdminGallery from "./pages/admin/AdminGallery";
 import AdminMessages from "./pages/admin/AdminMessages";
 
 const queryClient = new QueryClient();
@@ -44,11 +48,12 @@ const App = () => (
             <Route path="/admin" element={<AdminLogin />} />
             <Route path="/admin/dashboard" element={<Dashboard />} />
             <Route path="/admin/departments" element={<AdminDepartments />} />
+            <Route path="/admin/members" element={<AdminMembers />} />
+            <Route path="/admin/faculty" element={<AdminFaculty />} />
+            <Route path="/admin/events" element={<AdminEvents />} />
+            <Route path="/admin/gallery" element={<AdminGallery />} />
             <Route path="/admin/homepage" element={<Dashboard />} />
             <Route path="/admin/about" element={<Dashboard />} />
-            <Route path="/admin/faculty" element={<Dashboard />} />
-            <Route path="/admin/events" element={<Dashboard />} />
-            <Route path="/admin/gallery" element={<Dashboard />} />
             <Route path="/admin/messages" element={<AdminMessages />} />
             
             <Route path="*" element={<NotFound />} />

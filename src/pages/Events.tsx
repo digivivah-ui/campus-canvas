@@ -32,12 +32,12 @@
              animate={{ opacity: 1, y: 0 }}
              className="max-w-3xl"
            >
-             <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
-               Events & Announcements
-             </h1>
-             <p className="text-xl text-primary-foreground/80">
-               Stay informed about upcoming events, workshops, and important announcements.
-             </p>
+              <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
+                Events & Announcements
+              </h1>
+              <p className="text-xl text-primary-foreground/80">
+                Stay informed about upcoming events, seminars, placement drives, and cultural activities at MGCM.
+              </p>
            </motion.div>
          </div>
        </section>

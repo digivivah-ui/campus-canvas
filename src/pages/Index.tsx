@@ -7,6 +7,8 @@ import { HeroSection } from '@/components/public/HeroSection';
 import { StatsSection } from '@/components/public/StatsSection';
 import { DepartmentCard } from '@/components/public/DepartmentCard';
 import { EventsCarousel } from '@/components/public/EventsCarousel';
+import { AutoScrollImages } from '@/components/public/AutoScrollImages';
+import { MembersCarousel } from '@/components/public/MembersCarousel';
 import { Button } from '@/components/ui/button';
 import { getDepartments } from '@/services/api';
 import type { Department } from '@/types/database';
@@ -31,6 +33,12 @@ const Index = () => {
       {/* Stats Section */}
       <StatsSection />
 
+      {/* Auto-scroll Images */}
+      <AutoScrollImages />
+
+      {/* Leadership Section */}
+      <MembersCarousel />
+
       {/* Featured Departments */}
       <section className="section-padding bg-background">
         <div className="container-college">
@@ -44,7 +52,7 @@ const Index = () => {
               Our Departments
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Explore our diverse range of academic programs designed to prepare you for success.
+              Explore our diverse range of academic programs designed to prepare you for success in the dynamic business world.
             </p>
           </motion.div>
 
@@ -86,7 +94,7 @@ const Index = () => {
               Upcoming Events
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Stay updated with the latest happenings at Apex University.
+              Stay updated with the latest happenings at MGCM.
             </p>
           </motion.div>
 
@@ -116,7 +124,7 @@ const Index = () => {
               Ready to Start Your Journey?
             </h2>
             <p className="text-primary-foreground/80 mb-8 text-lg">
-              Join thousands of students who have transformed their lives through education at Apex University.
+              Join thousands of successful alumni who have transformed their lives through quality management education at MGCM.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link to="/contact">

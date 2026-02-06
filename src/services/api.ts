@@ -1,14 +1,15 @@
- import { supabase } from '@/integrations/supabase/client';
- import type {
-   HomepageContent,
-   AboutSection,
-   Department,
-   Faculty,
-   Event,
-   GalleryImage,
-   ContactSubmission,
-   Stat,
- } from '@/types/database';
+import { supabase } from '@/integrations/supabase/client';
+import type {
+  HomepageContent,
+  AboutSection,
+  Department,
+  Faculty,
+  Event,
+  GalleryImage,
+  ContactSubmission,
+  Stat,
+  Member,
+} from '@/types/database';
  
  // Homepage Content
  export async function getHomepageContent() {
@@ -148,12 +149,34 @@
      .eq('is_active', true)
      .order('order_index');
    
-   if (error) throw error;
-   return data as Stat[];
- }
- 
- // Contact
- export async function submitContactForm(data: {
+  if (error) throw error;
+  return data as Stat[];
+}
+
+// Members
+export async function getMembers() {
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .eq('is_active', true)
+    .order('order_index');
+  
+  if (error) throw error;
+  return data as Member[];
+}
+
+export async function getAllMembers() {
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .order('order_index');
+  
+  if (error) throw error;
+  return data as Member[];
+}
+
+// Contact
+export async function submitContactForm(data: {
    name: string;
    email: string;
    phone?: string;
@@ -370,6 +393,33 @@ export async function getAllGalleryImages() {
 
 export async function deleteContactSubmission(id: string) {
   const { error } = await supabase.from('contact_submissions').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Members CRUD
+export async function createMember(data: Partial<Member>) {
+  const { data: result, error } = await supabase
+    .from('members')
+    .insert([data as any])
+    .select()
+    .single();
+  if (error) throw error;
+  return result;
+}
+
+export async function updateMember(id: string, data: Partial<Member>) {
+  const { data: result, error } = await supabase
+    .from('members')
+    .update(data as any)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return result;
+}
+
+export async function deleteMember(id: string) {
+  const { error } = await supabase.from('members').delete().eq('id', id);
   if (error) throw error;
 }
  
