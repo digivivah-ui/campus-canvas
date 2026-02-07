@@ -49,7 +49,7 @@
                  animate={isVisible ? { opacity: 1, y: 0 } : {}}
                  transition={{ duration: 0.5, delay: index * 0.1 }}
                >
-                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-4 group-hover:bg-accent group-hover:text-accent-foreground transition-colors">
+                 <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-primary/10 text-primary mb-3 md:mb-4">
                    <Icon className="h-8 w-8" />
                  </div>
                  <h3 className="font-display text-4xl font-bold text-primary mb-2">

@@ -145,20 +145,20 @@
   }
 
   .card-college {
-    @apply bg-card rounded-xl border border-border shadow-md hover:shadow-lg transition-all duration-300;
+    @apply bg-card rounded-xl border border-border shadow-sm;
   }
 
   .btn-college-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
+    @apply bg-primary text-primary-foreground font-medium px-6 py-3 rounded-lg shadow-md;
   }
 
   .btn-college-gold {
-    @apply bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-6 py-3 rounded-lg transition-all duration-200;
+    @apply bg-accent text-accent-foreground font-semibold px-6 py-3 rounded-lg;
     box-shadow: var(--shadow-gold);
   }
 
   .btn-college-outline {
-    @apply border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground font-medium px-6 py-3 rounded-lg transition-all duration-200;
+    @apply border-2 border-primary text-primary font-medium px-6 py-3 rounded-lg;
   }
 
   .input-college {
@@ -166,7 +166,7 @@
   }
 
   .link-underline {
-    @apply relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-accent after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left;
+    @apply relative inline-block;
   }
 }
 
@@ -201,19 +201,15 @@
   .stagger-4 { animation-delay: 0.4s; }
 
   .hover-lift {
-    @apply transition-transform duration-300 hover:-translate-y-2;
+    @apply transition-transform duration-300;
   }
 
   .hover-scale {
-    @apply transition-transform duration-300 hover:scale-105;
+    @apply transition-transform duration-300;
   }
 
   .hover-glow {
     @apply transition-shadow duration-300;
-  }
-
-  .hover-glow:hover {
-    box-shadow: 0 0 30px hsla(43, 96%, 56%, 0.3);
   }
 }
 

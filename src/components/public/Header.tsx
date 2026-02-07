@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/about', label: 'About' },
   { href: '/departments', label: 'Departments' },
   { href: '/faculty', label: 'Faculty' },
   { href: '/events', label: 'Events' },
@@ -19,19 +18,19 @@ export function Header() {
   const location = useLocation();
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
+    <header className="relative z-50 bg-primary border-b border-primary-foreground/10">
       <div className="container-college">
-        <div className="flex h-20 items-center justify-between">
+        <div className="flex h-16 md:h-20 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="bg-primary p-2 rounded-lg group-hover:bg-primary/90 transition-colors">
-              <GraduationCap className="h-8 w-8 text-primary-foreground" />
+          <Link to="/" className="flex items-center gap-3">
+            <div className="bg-accent p-2 rounded-lg">
+              <GraduationCap className="h-6 w-6 md:h-8 md:w-8 text-accent-foreground" />
             </div>
-            <div className="hidden sm:block">
-              <h1 className="font-display text-lg font-bold text-primary leading-tight">
-                MGCM
+            <div>
+              <h1 className="font-display text-sm md:text-lg font-bold text-primary-foreground leading-tight">
+                MG Mahavidhyala
               </h1>
-              <p className="text-xs text-muted-foreground">Ashta, Sehore</p>
+              <p className="text-[10px] md:text-xs text-primary-foreground/70">Ashta, Sehore</p>
             </div>
           </Link>
 
@@ -42,10 +41,10 @@ export function Header() {
                 key={link.href}
                 to={link.href}
                 className={cn(
-                  'px-4 py-2 rounded-lg text-sm font-medium transition-colors link-underline',
+                  'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                   location.pathname === link.href
-                    ? 'text-primary bg-secondary'
-                    : 'text-muted-foreground hover:text-primary hover:bg-secondary/50'
+                    ? 'text-accent bg-primary-foreground/10'
+                    : 'text-primary-foreground/80 active:bg-primary-foreground/10'
                 )}
               >
                 {link.label}
@@ -54,15 +53,15 @@ export function Header() {
           </nav>
 
           {/* Admin Link & Mobile Menu */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link to="/admin" className="hidden sm:block">
-              <Button variant="outline" size="sm">
-                Admin Portal
+              <Button variant="outline" size="sm" className="border-primary-foreground/30 text-primary-foreground bg-transparent">
+                Admin
               </Button>
             </Link>
 
             <button
-              className="lg:hidden p-2 rounded-lg hover:bg-secondary transition-colors"
+              className="lg:hidden p-2 rounded-lg active:bg-primary-foreground/10 transition-colors text-primary-foreground"
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle menu"
             >
@@ -73,8 +72,8 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="lg:hidden border-t border-border animate-fade-in">
-            <nav className="py-4 space-y-1">
+          <div className="lg:hidden border-t border-primary-foreground/10 animate-fade-in pb-4">
+            <nav className="py-2 space-y-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -83,8 +82,8 @@ export function Header() {
                   className={cn(
                     'block px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                     location.pathname === link.href
-                      ? 'text-primary bg-secondary'
-                      : 'text-muted-foreground hover:text-primary hover:bg-secondary/50'
+                      ? 'text-accent bg-primary-foreground/10'
+                      : 'text-primary-foreground/80 active:bg-primary-foreground/10'
                   )}
                 >
                   {link.label}
@@ -93,7 +92,7 @@ export function Header() {
               <Link
                 to="/admin"
                 onClick={() => setIsOpen(false)}
-                className="block px-4 py-3 text-sm font-medium text-accent hover:bg-secondary/50 rounded-lg"
+                className="block px-4 py-3 text-sm font-medium text-accent active:bg-primary-foreground/10 rounded-lg"
               >
                 Admin Portal
               </Link>

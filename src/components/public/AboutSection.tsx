@@ -1,0 +1,147 @@
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Target, Eye, History, Heart, BookOpen, Award, Users } from 'lucide-react';
+import { getAboutSections } from '@/services/api';
+import type { AboutSection as AboutSectionType } from '@/types/database';
+import { Skeleton } from '@/components/common/Skeleton';
+
+const iconMap: Record<string, typeof Target> = {
+  vision: Eye,
+  mission: Target,
+  history: History,
+  values: Heart,
+};
+
+export function AboutSection() {
+  const [sections, setSections] = useState<AboutSectionType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    getAboutSections()
+      .then(setSections)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  return (
+    <>
+      {/* About College */}
+      <section id="about" className="py-12 md:py-20 bg-muted/40">
+        <div className="container-college">
+          <motion.div
+            className="text-center mb-10"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+              About Our College
+            </h2>
+            <p className="text-muted-foreground max-w-3xl mx-auto text-base md:text-lg leading-relaxed">
+              Mahatma Gandhi Mahavidhyala Ashta, affiliated to Barkatullah University Bhopal,
+              has been a beacon of quality education since 1995. Located near Mukharji Ground,
+              Kannod Road, Ashta, District Sehore, Madhya Pradesh — we are committed to 
+              nurturing students in Arts, Science, and Commerce streams.
+            </p>
+          </motion.div>
+
+          {isLoading ? (
+            <div className="space-y-12">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex gap-6 items-center">
+                  <Skeleton className="w-14 h-14 rounded-xl" />
+                  <div className="flex-1 space-y-3">
+                    <Skeleton className="h-6 w-40" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-10">
+              {sections.map((section, index) => {
+                const Icon = iconMap[section.section_key] || Target;
+                return (
+                  <motion.div
+                    key={section.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start bg-card rounded-2xl p-6 border border-border shadow-sm"
+                  >
+                    <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Icon className="w-7 h-7 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-xl md:text-2xl font-bold text-foreground mb-2">
+                        {section.title}
+                      </h3>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {section.content}
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Programs & NSS */}
+      <section id="programs" className="py-12 md:py-20 bg-secondary/40">
+        <div className="container-college">
+          <motion.div
+            className="text-center mb-10"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Programs & Activities
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Award,
+                title: 'Academic Excellence',
+                desc: 'Comprehensive programs in BA, BCom, BSc (Bio & Maths), MA, and MSc with expert faculty guidance.',
+              },
+              {
+                icon: Users,
+                title: 'NSS – National Service Scheme',
+                desc: 'Active NSS unit fostering social responsibility, community service, and nation-building among students.',
+              },
+              {
+                icon: BookOpen,
+                title: 'University Affiliation',
+                desc: 'Affiliated to Barkatullah University, Bhopal — ensuring recognized, quality education standards.',
+              },
+            ].map((item, index) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="text-center p-6 md:p-8 bg-card rounded-2xl border border-border shadow-sm"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
+                  <item.icon className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="font-display text-lg font-semibold text-foreground mb-3">
+                  {item.title}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}

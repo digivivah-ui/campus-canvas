@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, ChevronDown, MapPin } from 'lucide-react';
+import { ArrowRight, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getHomepageContent } from '@/services/api';
 import type { HomepageContent } from '@/types/database';
@@ -24,7 +24,7 @@ export function HeroSection() {
   if (isLoading) return <HeroSkeleton />;
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-hero">
+    <section className="relative min-h-[70vh] md:min-h-[80vh] flex items-center overflow-hidden bg-gradient-hero">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
@@ -38,36 +38,31 @@ export function HeroSection() {
         animate={{ y: [0, -30, 0], scale: [1, 1.1, 1] }}
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
-        className="absolute bottom-20 left-20 w-96 h-96 rounded-full bg-primary-foreground/10 blur-3xl"
-        animate={{ y: [0, 20, 0], scale: [1, 0.9, 1] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-      />
 
-      <div className="container-college relative z-10">
+      <div className="container-college relative z-10 py-12 md:py-0">
         <div className="max-w-4xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-accent/20 text-accent rounded-full text-sm font-medium mb-6">
-              <MapPin className="w-4 h-4" />
-              Ashta, Sehore, Madhya Pradesh
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-accent/20 text-accent rounded-full text-xs md:text-sm font-medium mb-4 md:mb-6">
+              <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              Near Mukharji Ground, Kannod Road, Ashta, Sehore (M.P.)
             </span>
           </motion.div>
 
           <motion.h1
-            className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-6 leading-tight"
+            className="font-display text-3xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4 md:mb-6 leading-tight"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
           >
-            {content?.title || 'Mahatma Gandhi College Of Management'}
+            {content?.title || 'Mahatma Gandhi Mahavidhyala Ashta'}
           </motion.h1>
 
           <motion.p
-            className="text-xl md:text-2xl text-primary-foreground/90 mb-4 font-display"
+            className="text-lg md:text-2xl text-primary-foreground/90 mb-3 md:mb-4 font-display"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -76,28 +71,28 @@ export function HeroSection() {
           </motion.p>
 
           <motion.p
-            className="text-lg text-primary-foreground/70 mb-10 max-w-2xl"
+            className="text-base md:text-lg text-primary-foreground/70 mb-8 md:mb-10 max-w-2xl"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
           >
-            {content?.content || 'Experience excellence in management education. Join our vibrant academic community where tradition meets innovation.'}
+            {content?.content || 'Affiliated to Barkatullah University, Bhopal. Quality education in Arts, Science & Commerce.'}
           </motion.p>
 
           <motion.div
-            className="flex flex-wrap gap-4"
+            className="flex flex-wrap gap-3 md:gap-4"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
             <Link to={content?.cta_link || '/departments'}>
-              <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-gold group">
+              <Button size="lg" className="bg-accent text-accent-foreground shadow-gold">
                 {content?.cta_text || 'Explore Programs'}
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link to="/contact">
-              <Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+              <Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground">
                 Contact Us
               </Button>
             </Link>
@@ -105,7 +100,7 @@ export function HeroSection() {
 
           {/* Admissions Badge */}
           <motion.div
-            className="mt-8 inline-flex items-center gap-3 px-5 py-3 bg-primary-foreground/10 backdrop-blur-sm rounded-xl border border-primary-foreground/20"
+            className="mt-6 md:mt-8 inline-flex items-center gap-3 px-4 md:px-5 py-2.5 md:py-3 bg-primary-foreground/10 backdrop-blur-sm rounded-xl border border-primary-foreground/20"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
@@ -114,21 +109,37 @@ export function HeroSection() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-accent"></span>
             </span>
-            <span className="text-primary-foreground font-medium">
+            <span className="text-primary-foreground font-medium text-sm md:text-base">
               🎓 Admissions Open for 2026-27 Session
             </span>
           </motion.div>
+
+          {/* University & Results Links */}
+          <motion.div
+            className="mt-4 flex flex-wrap gap-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+          >
+            <a
+              href="https://bubhopal.ac.in/1068/Home"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs md:text-sm text-accent underline underline-offset-2"
+            >
+              Barkatullah University →
+            </a>
+            <a
+              href="https://bubhopal.mponline.gov.in/Portal/Services/BARKATULLAH/Counterbase/Result/VeiwResult_NEP.aspx"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs md:text-sm text-accent underline underline-offset-2"
+            >
+              Check Results →
+            </a>
+          </motion.div>
         </div>
       </div>
-
-      {/* Scroll Indicator */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
-        animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 2, repeat: Infinity }}
-      >
-        <ChevronDown className="h-8 w-8 text-primary-foreground/50" />
-      </motion.div>
     </section>
   );
 }

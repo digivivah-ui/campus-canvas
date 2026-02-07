@@ -4,10 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 // Public Pages
 import Index from "./pages/Index";
-import About from "./pages/About";
 import Departments from "./pages/Departments";
 import Faculty from "./pages/Faculty";
 import Events from "./pages/Events";
@@ -34,10 +34,11 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
-            <Route path="/about" element={<About />} />
+            <Route path="/about" element={<Index />} />
             <Route path="/departments" element={<Departments />} />
             <Route path="/faculty" element={<Faculty />} />
             <Route path="/events" element={<Events />} />

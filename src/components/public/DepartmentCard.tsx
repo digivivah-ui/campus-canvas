@@ -28,10 +28,10 @@
        transition={{ duration: 0.5, delay: index * 0.1 }}
        className="group"
      >
-       <div className="bg-card rounded-2xl border border-border p-8 h-full hover:shadow-college-lg hover:border-accent/30 transition-all duration-300 hover:-translate-y-2">
-         <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-accent group-hover:scale-110 transition-all">
-           <Icon className="h-7 w-7 text-primary group-hover:text-accent-foreground" />
-         </div>
+        <div className="bg-card rounded-2xl border border-border p-6 md:p-8 h-full shadow-sm">
+          <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-5">
+            <Icon className="h-7 w-7 text-primary" />
+          </div>
          
          <h3 className="font-display text-xl font-semibold text-foreground mb-3">
            {department.name}
@@ -43,7 +43,7 @@
  
          <Dialog>
            <DialogTrigger asChild>
-             <Button variant="outline" className="w-full group-hover:border-accent group-hover:text-accent">
+             <Button variant="outline" className="w-full">
                View Details
              </Button>
            </DialogTrigger>
