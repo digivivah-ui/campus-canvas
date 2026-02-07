@@ -72,17 +72,17 @@ export function AutoScrollImages() {
               key={`${image.id}-${index}`}
               className="flex-shrink-0 w-72 md:w-96 group/card"
             >
-              <div className="relative overflow-hidden rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <div className="relative overflow-hidden rounded-2xl shadow-md">
                 <img
                   src={image.image_url}
                   alt={image.title || 'Campus image'}
-                  className="w-full h-48 md:h-64 object-cover transform group-hover/card:scale-105 transition-transform duration-500"
+                  className="w-full h-48 md:h-64 object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
                   <div className="absolute bottom-4 left-4 right-4">
-                    <h3 className="text-white font-semibold text-lg">{image.title}</h3>
+                    <h3 className="text-white font-semibold text-sm md:text-lg">{image.title}</h3>
                     {image.caption && (
-                      <p className="text-white/80 text-sm mt-1">{image.caption}</p>
+                      <p className="text-white/80 text-xs md:text-sm mt-1">{image.caption}</p>
                     )}
                   </div>
                 </div>

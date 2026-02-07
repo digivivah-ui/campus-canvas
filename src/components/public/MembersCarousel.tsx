@@ -102,7 +102,7 @@ export function MembersCarousel() {
               key={`${member.id}-${index}`}
               className="flex-shrink-0 w-72"
             >
-              <div className="bg-card rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group hover:-translate-y-2">
+              <div className="bg-card rounded-2xl shadow-md overflow-hidden">
                 <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
                   {member.photo_url ? (
                     <img
