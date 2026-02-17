@@ -24,7 +24,7 @@ export function HeroSection() {
   if (isLoading) return <HeroSkeleton />;
 
   return (
-    <section className="relative min-h-[70vh] md:min-h-[80vh] flex items-center overflow-hidden bg-gradient-hero">
+    <section className="relative min-h-screen h-screen flex items-center overflow-hidden bg-gradient-hero">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
