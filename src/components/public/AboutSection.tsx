@@ -26,7 +26,7 @@ export function AboutSection() {
   return (
     <>
       {/* About College */}
-      <section id="about" className="py-12 md:py-20 bg-muted/40">
+      <section id="about" className="py-12 md:py-20 bg-primary/5">
         <div className="container-college">
           <motion.div
             className="text-center mb-10"
@@ -34,7 +34,7 @@ export function AboutSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-primary mb-4">
               About Our College
             </h2>
             <p className="text-muted-foreground max-w-3xl mx-auto text-base md:text-lg leading-relaxed">
@@ -69,13 +69,13 @@ export function AboutSection() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
-                    className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start bg-card rounded-2xl p-6 border border-border shadow-sm"
+                    className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start bg-card rounded-2xl p-6 border border-primary/10 shadow-sm"
                   >
-                    <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-primary/15 flex items-center justify-center">
                       <Icon className="w-7 h-7 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-display text-xl md:text-2xl font-bold text-foreground mb-2">
+                      <h3 className="font-display text-xl md:text-2xl font-bold text-primary mb-2">
                         {section.title}
                       </h3>
                       <p className="text-muted-foreground leading-relaxed">
@@ -91,7 +91,7 @@ export function AboutSection() {
       </section>
 
       {/* Programs & NSS */}
-      <section id="programs" className="py-12 md:py-20 bg-secondary/40">
+      <section id="programs" className="py-12 md:py-20 bg-primary/[0.03]">
         <div className="container-college">
           <motion.div
             className="text-center mb-10"
@@ -99,7 +99,7 @@ export function AboutSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-primary mb-4">
               Programs & Activities
             </h2>
           </motion.div>
@@ -128,12 +128,12 @@ export function AboutSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="text-center p-6 md:p-8 bg-card rounded-2xl border border-border shadow-sm"
+                className="text-center p-6 md:p-8 bg-card rounded-2xl border border-primary/10 shadow-sm"
               >
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
+                <div className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-5">
                   <item.icon className="w-7 h-7 text-primary" />
                 </div>
-                <h3 className="font-display text-lg font-semibold text-foreground mb-3">
+                <h3 className="font-display text-lg font-semibold text-primary mb-3">
                   {item.title}
                 </h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
