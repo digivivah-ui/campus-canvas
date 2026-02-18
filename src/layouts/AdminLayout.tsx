@@ -11,6 +11,8 @@
    LogOut,
    GraduationCap,
    Menu,
+   Settings,
+   BarChart3,
  } from 'lucide-react';
  import { useAuth } from '@/hooks/useAuth';
  import { Button } from '@/components/ui/button';
@@ -24,8 +26,10 @@
  
 const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/admin/settings', label: 'Site Settings', icon: Settings },
   { href: '/admin/homepage', label: 'Homepage', icon: FileText },
   { href: '/admin/about', label: 'About', icon: FileText },
+  { href: '/admin/stats', label: 'Statistics', icon: BarChart3 },
   { href: '/admin/departments', label: 'Departments', icon: Building2 },
   { href: '/admin/members', label: 'Members', icon: Users },
   { href: '/admin/faculty', label: 'Faculty', icon: Users },

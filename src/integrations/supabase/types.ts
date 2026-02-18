@@ -373,6 +373,39 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          label: string | null
+          setting_key: string
+          setting_type: string
+          setting_value: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          label?: string | null
+          setting_key: string
+          setting_type?: string
+          setting_value?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          label?: string | null
+          setting_key?: string
+          setting_type?: string
+          setting_value?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       stats: {
         Row: {
           created_at: string | null
