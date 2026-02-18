@@ -75,8 +75,8 @@ export function StatsSection() {
               <motion.div
                 key={stat.id}
                 className="text-center group p-4 md:p-6 rounded-2xl bg-card shadow-sm border border-border/50"
-                initial={{ opacity: 0, y: 30 }}
-                animate={isVisible ? { opacity: 1, y: 0 } : {}}
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-primary/10 text-primary mb-3 md:mb-4">
