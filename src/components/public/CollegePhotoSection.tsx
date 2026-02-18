@@ -1,21 +1,19 @@
 import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
-const desktopImage = {
-  url: 'https://images.unsplash.com/photo-1562774053-701939374585?w=1600&q=80',
-  title: 'Mahatma Gandhi Mahavidhyala Ashta',
-  tagline: 'Empowering Minds, Building Futures Since 1995',
-};
-
-const mobileImage = {
-  url: 'https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=800&q=80',
-  title: 'Mahatma Gandhi Mahavidhyala Ashta',
-  tagline: 'Empowering Minds, Building Futures Since 1995',
-};
+const defaultDesktop = 'https://i.pinimg.com/736x/cb/f7/3e/cbf73e976099716e0afe01b6eb78ff53.jpg';
+const defaultMobile = 'https://i.pinimg.com/736x/cb/f7/3e/cbf73e976099716e0afe01b6eb78ff53.jpg';
 
 export function CollegePhotoSection() {
   const isMobile = useIsMobile();
-  const image = isMobile ? mobileImage : desktopImage;
+  const { getSetting } = useSiteSettings();
+
+  const imageUrl = isMobile
+    ? getSetting('college_photo_mobile', defaultMobile)
+    : getSetting('college_photo_desktop', defaultDesktop);
+  const title = getSetting('college_photo_title', 'Mahatma Gandhi Mahavidhyala Ashta');
+  const tagline = getSetting('college_photo_tagline', 'Empowering Minds, Building Futures Since 1995');
 
   return (
     <section className="relative w-full h-screen overflow-hidden">
@@ -26,8 +24,8 @@ export function CollegePhotoSection() {
         transition={{ duration: 1.2, ease: 'easeOut' }}
       >
         <img
-          src={image.url}
-          alt="Mahatma Gandhi Mahavidhyala Ashta Campus"
+          src={imageUrl}
+          alt={title}
           className="w-full h-full object-cover"
           loading="eager"
         />
@@ -39,10 +37,10 @@ export function CollegePhotoSection() {
           transition={{ duration: 0.8, delay: 0.5 }}
         >
           <h2 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-2 md:mb-3 drop-shadow-lg">
-            {image.title}
+            {title}
           </h2>
           <p className="text-white/90 text-sm md:text-lg lg:text-xl font-medium drop-shadow-md max-w-2xl">
-            {image.tagline}
+            {tagline}
           </p>
         </motion.div>
       </motion.div>

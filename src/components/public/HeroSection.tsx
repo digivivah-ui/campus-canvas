@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { getHomepageContent } from '@/services/api';
 import type { HomepageContent } from '@/types/database';
 import { HeroSkeleton } from '@/components/common/Skeleton';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 export function HeroSection() {
   const [content, setContent] = useState<HomepageContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { getSetting } = useSiteSettings();
 
   useEffect(() => {
     getHomepageContent()
@@ -23,8 +25,21 @@ export function HeroSection() {
 
   if (isLoading) return <HeroSkeleton />;
 
+  const heroImage = content?.image_url || getSetting('hero_image_url');
+  const collegeName = getSetting('college_name', 'Mahatma Gandhi Mahavidhyala Ashta');
+  const address = getSetting('address', 'Near Mukharji Ground, Kannod Road, Ashta, Sehore (M.P.)');
+
   return (
-    <section className="relative min-h-screen h-screen flex items-center overflow-hidden bg-gradient-hero">
+    <section className="relative min-h-screen h-screen flex items-center overflow-hidden">
+      {/* Background Image */}
+      {heroImage && (
+        <div className="absolute inset-0">
+          <img src={heroImage} alt={collegeName} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-primary/80" />
+        </div>
+      )}
+      {!heroImage && <div className="absolute inset-0 bg-gradient-hero" />}
+
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
@@ -48,7 +63,7 @@ export function HeroSection() {
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 bg-accent/20 text-accent rounded-full text-xs md:text-sm font-medium mb-4 md:mb-6">
               <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              Near Mukharji Ground, Kannod Road, Ashta, Sehore (M.P.)
+              {address}
             </span>
           </motion.div>
 
@@ -58,7 +73,7 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
           >
-            {content?.title || 'Mahatma Gandhi Mahavidhyala Ashta'}
+            {content?.title || collegeName}
           </motion.h1>
 
           <motion.p
@@ -67,7 +82,7 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            {content?.subtitle || 'Empowering Future Leaders Since 1995'}
+            {content?.subtitle || getSetting('tagline', 'Empowering Future Leaders Since 1995')}
           </motion.p>
 
           <motion.p
@@ -112,31 +127,6 @@ export function HeroSection() {
             <span className="text-primary-foreground font-medium text-sm md:text-base">
               🎓 Admissions Open for 2026-27 Session
             </span>
-          </motion.div>
-
-          {/* University & Results Links */}
-          <motion.div
-            className="mt-4 flex flex-wrap gap-3"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-          >
-            <a
-              href="https://bubhopal.ac.in/1068/Home"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs md:text-sm text-accent underline underline-offset-2"
-            >
-              Barkatullah University →
-            </a>
-            <a
-              href="https://bubhopal.mponline.gov.in/Portal/Services/BARKATULLAH/Counterbase/Result/VeiwResult_NEP.aspx"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs md:text-sm text-accent underline underline-offset-2"
-            >
-              Check Results →
-            </a>
           </motion.div>
         </div>
       </div>

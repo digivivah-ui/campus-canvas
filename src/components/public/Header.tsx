@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, GraduationCap } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -16,6 +17,10 @@ const navLinks = [
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { getSetting } = useSiteSettings();
+
+  const collegeName = getSetting('college_name', 'MG Mahavidhyala');
+  const logoUrl = getSetting('logo_url');
 
   return (
     <header className="relative z-50 bg-primary border-b border-primary-foreground/10">
@@ -23,14 +28,20 @@ export function Header() {
         <div className="flex h-16 md:h-20 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <div className="bg-accent p-2 rounded-lg">
-              <GraduationCap className="h-6 w-6 md:h-8 md:w-8 text-accent-foreground" />
-            </div>
+            {logoUrl ? (
+              <img src={logoUrl} alt={collegeName} className="h-10 w-10 md:h-12 md:w-12 rounded-lg object-cover" />
+            ) : (
+              <div className="bg-accent p-2 rounded-lg">
+                <span className="text-accent-foreground font-bold text-lg">MG</span>
+              </div>
+            )}
             <div>
               <h1 className="font-display text-sm md:text-lg font-bold text-primary-foreground leading-tight">
-                MG Mahavidhyala
+                {collegeName.length > 20 ? collegeName.slice(0, 20) : collegeName}
               </h1>
-              <p className="text-[10px] md:text-xs text-primary-foreground/70">Ashta, Sehore</p>
+              <p className="text-[10px] md:text-xs text-primary-foreground/70">
+                {getSetting('address', 'Ashta, Sehore').split(',').slice(-2).join(',').trim()}
+              </p>
             </div>
           </Link>
 
