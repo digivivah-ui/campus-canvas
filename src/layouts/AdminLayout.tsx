@@ -1,19 +1,20 @@
  import { ReactNode, useEffect } from 'react';
  import { useNavigate, Link, useLocation } from 'react-router-dom';
- import {
-   Home,
-   FileText,
-   Building2,
-   Users,
-   Calendar,
-   Image,
-   MessageSquare,
-   LogOut,
-   GraduationCap,
-   Menu,
-   Settings,
-   BarChart3,
- } from 'lucide-react';
+import {
+    Home,
+    FileText,
+    Building2,
+    Users,
+    Calendar,
+    Image,
+    MessageSquare,
+    LogOut,
+    GraduationCap,
+    Menu,
+    Settings,
+    BarChart3,
+    Globe,
+  } from 'lucide-react';
  import { useAuth } from '@/hooks/useAuth';
  import { Button } from '@/components/ui/button';
  import { PageLoader } from '@/components/common/LoadingSpinner';
@@ -35,6 +36,7 @@ const navItems = [
   { href: '/admin/faculty', label: 'Faculty', icon: Users },
   { href: '/admin/events', label: 'Events', icon: Calendar },
   { href: '/admin/gallery', label: 'Gallery', icon: Image },
+  { href: '/admin/social-links', label: 'Social Links', icon: Globe },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
 ];
  

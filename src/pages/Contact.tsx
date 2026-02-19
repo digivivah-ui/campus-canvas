@@ -2,8 +2,16 @@ import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { ContactForm } from '@/components/public/ContactForm';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 export default function Contact() {
+  const { getSetting } = useSiteSettings();
+
+  const collegeName = getSetting('college_name', 'Mahatma Gandhi Mahavidhyala Ashta');
+  const address = getSetting('address', 'Near Mukharji Ground, Kannod Road, Ashta, District Sehore, Madhya Pradesh');
+  const phone = getSetting('contact_phone', '+91 7562-222XXX');
+  const email = getSetting('contact_email', 'info@mgmahavidhyala.ac.in');
+
   return (
     <PublicLayout>
       {/* Hero */}
@@ -18,7 +26,7 @@ export default function Contact() {
               Contact Us
             </h1>
             <p className="text-xl text-primary-foreground/80">
-              Have questions about admissions or our programs? We'd love to hear from you. Send us a message and we'll respond promptly.
+              {getSetting('contact_hero_subtitle', 'Have questions about admissions or our programs? We\'d love to hear from you.')}
             </p>
           </motion.div>
         </div>
@@ -45,13 +53,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Address</h3>
-                    <p className="text-muted-foreground">
-                      Mahatma Gandhi College Of Management<br />
-                      Ward No 15, Malviya Nagar,<br />
-                      Kannod Road, Ashta,<br />
-                      Sehore – 466116<br />
-                      Madhya Pradesh, India
-                    </p>
+                    <p className="text-muted-foreground">{address}</p>
                   </div>
                 </div>
 
@@ -61,10 +63,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Phone</h3>
-                    <p className="text-muted-foreground">
-                      Main: +91 7562-222XXX<br />
-                      Admissions: +91 7562-222XXX
-                    </p>
+                    <p className="text-muted-foreground">{phone}</p>
                   </div>
                 </div>
 
@@ -74,10 +73,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Email</h3>
-                    <p className="text-muted-foreground">
-                      info@mgcm.ac.in<br />
-                      admissions@mgcm.ac.in
-                    </p>
+                    <p className="text-muted-foreground">{email}</p>
                   </div>
                 </div>
 
@@ -88,8 +84,7 @@ export default function Contact() {
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Office Hours</h3>
                     <p className="text-muted-foreground">
-                      Mon - Sat: 9:00 AM - 5:00 PM<br />
-                      Sunday: Closed
+                      {getSetting('office_hours', 'Mon - Sat: 9:00 AM - 5:00 PM\nSunday: Closed')}
                     </p>
                   </div>
                 </div>
@@ -124,14 +119,14 @@ export default function Contact() {
             className="bg-card rounded-2xl border border-border overflow-hidden"
           >
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3672.0!2d76.7!3d23.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjPCsDA0JzQyLjAiTiA3NsKwNDInMDAuMCJF!5e0!3m2!1sen!2sin!4v1234567890"
+              src={getSetting('map_embed_url', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3672.0!2d76.7!3d23.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjPCsDA0JzQyLjAiTiA3NsKwNDInMDAuMCJF!5e0!3m2!1sen!2sin!4v1234567890')}
               width="100%"
               height="400"
               style={{ border: 0 }}
               allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-              title="MGCM Location"
+              title={`${collegeName} Location`}
               className="w-full"
             />
           </motion.div>

@@ -22,7 +22,7 @@
        transition={{ duration: 0.5, delay: index * 0.1 }}
        className="group"
      >
-       <div className="flex gap-6 bg-card rounded-2xl border border-border p-6 hover:shadow-college-lg hover:border-accent/30 transition-all duration-300">
+       <div className="flex gap-6 bg-card rounded-2xl border border-border p-6 lg:min-h-[180px] lg:py-8 hover:shadow-college-lg hover:border-accent/30 transition-all duration-300">
          {/* Date Box */}
          {eventDate && (
            <div className="flex-shrink-0 w-20 h-20 rounded-xl bg-primary flex flex-col items-center justify-center text-primary-foreground">

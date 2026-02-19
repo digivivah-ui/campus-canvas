@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { getAllFaculty, getAllDepartments, createFaculty, updateFaculty, deleteFaculty, uploadImage } from '@/services/api';
+import { getAllFaculty, getAllDepartments, createFaculty, updateFaculty, deleteFaculty } from '@/services/api';
 import type { Faculty, Department } from '@/types/database';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
@@ -47,10 +47,10 @@ export default function AdminFaculty() {
     phone: '',
     bio: '',
     qualifications: '',
+    photo_url: '',
     order_index: 0,
     is_active: true,
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
@@ -79,10 +79,10 @@ export default function AdminFaculty() {
       phone: '',
       bio: '',
       qualifications: '',
+      photo_url: '',
       order_index: 0,
       is_active: true,
     });
-    setImageFile(null);
     setEditingFaculty(null);
   };
 
@@ -96,6 +96,7 @@ export default function AdminFaculty() {
       phone: member.phone || '',
       bio: member.bio || '',
       qualifications: member.qualifications?.join(', ') || '',
+      photo_url: member.photo_url || '',
       order_index: member.order_index,
       is_active: member.is_active,
     });
@@ -107,14 +108,8 @@ export default function AdminFaculty() {
     setIsSaving(true);
 
     try {
-      let photo_url = editingFaculty?.photo_url;
-      if (imageFile) {
-        photo_url = await uploadImage(imageFile, 'faculty');
-      }
-
       const facultyData = {
         ...formData,
-        photo_url,
         qualifications: formData.qualifications.split(',').map(q => q.trim()).filter(Boolean),
         department_id: formData.department_id || null,
       };
@@ -304,13 +299,17 @@ export default function AdminFaculty() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="image">Photo</Label>
+                <Label htmlFor="photo_url">Photo URL</Label>
                 <Input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  id="photo_url"
+                  type="url"
+                  placeholder="https://example.com/photo.jpg"
+                  value={formData.photo_url}
+                  onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
                 />
+                {formData.photo_url && (
+                  <img src={formData.photo_url} alt="Preview" className="h-20 w-auto rounded-lg border object-cover mt-2" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                )}
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>

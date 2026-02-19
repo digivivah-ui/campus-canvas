@@ -1,9 +1,19 @@
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, Linkedin, Youtube } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, Linkedin, Youtube, Globe } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useSocialLinks } from '@/hooks/useSocialLinks';
+
+const iconMap: Record<string, typeof Globe> = {
+  facebook: Facebook,
+  instagram: Instagram,
+  twitter: Twitter,
+  linkedin: Linkedin,
+  youtube: Youtube,
+};
 
 export function Footer() {
   const { getSetting } = useSiteSettings();
+  const { links: socialLinks } = useSocialLinks();
 
   const collegeName = getSetting('college_name', 'Mahatma Gandhi Mahavidhyala Ashta');
   const logoUrl = getSetting('logo_url');
@@ -12,17 +22,6 @@ export function Footer() {
   const address = getSetting('address', 'Near Mukharji Ground, Kannod Road, Ashta, District Sehore, Madhya Pradesh');
   const phone = getSetting('contact_phone', '+91 7562-222XXX');
   const email = getSetting('contact_email', 'info@mgmahavidhyala.ac.in');
-
-  const socialLinks = [
-    { key: 'social_facebook', icon: Facebook, label: 'Facebook' },
-    { key: 'social_instagram', icon: Instagram, label: 'Instagram' },
-    { key: 'social_twitter', icon: Twitter, label: 'Twitter' },
-    { key: 'social_linkedin', icon: Linkedin, label: 'LinkedIn' },
-    { key: 'social_youtube', icon: Youtube, label: 'YouTube' },
-  ].filter(s => getSetting(s.key));
-
-  const whatsappNumber = getSetting('whatsapp_number');
-  const whatsappMessage = getSetting('whatsapp_message', 'Hello!');
 
   return (
     <footer className="bg-primary text-primary-foreground">
@@ -44,21 +43,24 @@ export function Footer() {
             </Link>
             <p className="text-sm opacity-80 leading-relaxed">{footerText}</p>
 
-            {/* Social Links */}
+            {/* Social Links from DB */}
             {socialLinks.length > 0 && (
               <div className="flex gap-3 pt-2">
-                {socialLinks.map(({ key, icon: Icon, label }) => (
-                  <a
-                    key={key}
-                    href={getSetting(key)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    className="w-9 h-9 rounded-lg bg-primary-foreground/10 flex items-center justify-center text-primary-foreground/80 active:bg-primary-foreground/20 transition-colors"
-                  >
-                    <Icon className="h-4 w-4" />
-                  </a>
-                ))}
+                {socialLinks.map((link) => {
+                  const Icon = iconMap[link.icon || ''] || Globe;
+                  return (
+                    <a
+                      key={link.id}
+                      href={link.url!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={link.platform_name}
+                      className="w-9 h-9 rounded-lg bg-primary-foreground/10 flex items-center justify-center text-primary-foreground/80 active:bg-primary-foreground/20 transition-colors"
+                    >
+                      <Icon className="h-4 w-4" />
+                    </a>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -101,17 +103,6 @@ export function Footer() {
                 <span className="text-sm opacity-80">{email}</span>
               </li>
             </ul>
-
-            {whatsappNumber && (
-              <a
-                href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground rounded-lg text-sm font-medium"
-              >
-                💬 Chat on WhatsApp
-              </a>
-            )}
           </div>
         </div>
 

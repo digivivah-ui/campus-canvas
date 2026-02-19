@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { HeroSection } from '@/components/public/HeroSection';
@@ -16,10 +16,12 @@ import { Button } from '@/components/ui/button';
 import { getDepartments } from '@/services/api';
 import type { Department } from '@/types/database';
 import { CardSkeleton } from '@/components/common/Skeleton';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 const Index = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { getSetting } = useSiteSettings();
 
   useEffect(() => {
     getDepartments()
@@ -28,28 +30,19 @@ const Index = () => {
       .finally(() => setIsLoading(false));
   }, []);
 
+  const collegeName = getSetting('college_name', 'Mahatma Gandhi Mahavidhyala Ashta');
+
   return (
     <PublicLayout>
-      {/* Hero Section */}
       <HeroSection />
-
-      {/* College Photo Section */}
       <CollegePhotoSection />
-
-      {/* Stats Section */}
       <StatsSection />
-
-      {/* About College (merged from About page) */}
       <AboutSection />
-
-      {/* Auto-scroll Images */}
       <AutoScrollImages />
-
-      {/* Leadership Section */}
       <MembersCarousel />
 
       {/* Featured Departments */}
-      <section className="py-12 md:py-20 bg-muted/30">
+      <section className="py-12 md:py-20">
         <div className="container-college">
           <motion.div
             className="text-center mb-10 md:mb-12"
@@ -58,10 +51,10 @@ const Index = () => {
             viewport={{ once: true }}
           >
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Our Departments
+              {getSetting('departments_section_title', 'Our Departments')}
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Explore our diverse range of academic programs in Arts, Science, and Commerce.
+              {getSetting('departments_section_subtitle', 'Explore our diverse range of academic programs in Arts, Science, and Commerce.')}
             </p>
           </motion.div>
 
@@ -90,11 +83,10 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Explore Campus (YouTube videos) */}
       <ExploreCampusSection />
 
       {/* Events Section */}
-      <section className="py-12 md:py-20 bg-muted/40">
+      <section className="py-12 md:py-20">
         <div className="container-college">
           <motion.div
             className="text-center mb-10 md:mb-12"
@@ -103,10 +95,10 @@ const Index = () => {
             viewport={{ once: true }}
           >
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Upcoming Events
+              {getSetting('events_section_title', 'Upcoming Events')}
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Stay updated with the latest happenings at MG Mahavidhyala.
+              {getSetting('events_section_subtitle', `Stay updated with the latest happenings at ${collegeName}.`)}
             </p>
           </motion.div>
 
@@ -133,21 +125,20 @@ const Index = () => {
             className="max-w-3xl mx-auto"
           >
             <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
-              Ready to Start Your Journey?
+              {getSetting('cta_title', 'Ready to Start Your Journey?')}
             </h2>
             <p className="text-primary-foreground/80 mb-6 md:mb-8 text-base md:text-lg">
-              Join our vibrant academic community at Mahatma Gandhi Mahavidhyala Ashta. 
-              Quality education in Arts, Science & Commerce.
+              {getSetting('cta_description', `Join our vibrant academic community at ${collegeName}. Quality education in Arts, Science & Commerce.`)}
             </p>
             <div className="flex flex-wrap justify-center gap-3 md:gap-4">
               <Link to="/contact">
                 <Button size="lg" className="bg-accent text-accent-foreground shadow-gold">
-                  Apply Now
+                  {getSetting('cta_button_text', 'Apply Now')}
                 </Button>
               </Link>
-              <a href="https://bubhopal.ac.in/1068/Home" target="_blank" rel="noopener noreferrer">
+              <a href={getSetting('university_link', 'https://bubhopal.ac.in/1068/Home')} target="_blank" rel="noopener noreferrer">
                 <Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground">
-                  Visit University
+                  {getSetting('university_button_text', 'Visit University')}
                 </Button>
               </a>
             </div>

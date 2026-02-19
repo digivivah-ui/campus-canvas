@@ -24,7 +24,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { getAllEvents, createEvent, updateEvent, deleteEvent, uploadImage } from '@/services/api';
+import { getAllEvents, createEvent, updateEvent, deleteEvent } from '@/services/api';
 import type { Event } from '@/types/database';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
@@ -39,10 +39,10 @@ export default function AdminEvents() {
     event_date: '',
     end_date: '',
     location: '',
+    image_url: '',
     is_featured: false,
     is_active: true,
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
@@ -68,10 +68,10 @@ export default function AdminEvents() {
       event_date: '',
       end_date: '',
       location: '',
+      image_url: '',
       is_featured: false,
       is_active: true,
     });
-    setImageFile(null);
     setEditingEvent(null);
   };
 
@@ -83,6 +83,7 @@ export default function AdminEvents() {
       event_date: event.event_date ? event.event_date.slice(0, 16) : '',
       end_date: event.end_date ? event.end_date.slice(0, 16) : '',
       location: event.location || '',
+      image_url: event.image_url || '',
       is_featured: event.is_featured,
       is_active: event.is_active,
     });
@@ -94,14 +95,8 @@ export default function AdminEvents() {
     setIsSaving(true);
 
     try {
-      let image_url = editingEvent?.image_url;
-      if (imageFile) {
-        image_url = await uploadImage(imageFile, 'events');
-      }
-
       const eventData = {
         ...formData,
-        image_url,
         event_date: formData.event_date || null,
         end_date: formData.end_date || null,
       };
@@ -265,13 +260,17 @@ export default function AdminEvents() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="image">Event Image</Label>
+                <Label htmlFor="image_url">Image URL</Label>
                 <Input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  id="image_url"
+                  type="url"
+                  placeholder="https://example.com/image.jpg"
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                 />
+                {formData.image_url && (
+                  <img src={formData.image_url} alt="Preview" className="h-20 w-auto rounded-lg border object-cover mt-2" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                )}
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center space-x-2">
