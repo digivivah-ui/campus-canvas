@@ -28,6 +28,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminStats from "./pages/admin/AdminStats";
 import AdminHomepage from "./pages/admin/AdminHomepage";
 import AdminAbout from "./pages/admin/AdminAbout";
+import AdminSocialLinks from "./pages/admin/AdminSocialLinks";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/admin/faculty" element={<AdminFaculty />} />
               <Route path="/admin/events" element={<AdminEvents />} />
               <Route path="/admin/gallery" element={<AdminGallery />} />
+              <Route path="/admin/social-links" element={<AdminSocialLinks />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
               
               <Route path="*" element={<NotFound />} />

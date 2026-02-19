@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { getAllGalleryImages, createGalleryImage, updateGalleryImage, deleteGalleryImage, uploadImage, deleteImage } from '@/services/api';
+import { getAllGalleryImages, createGalleryImage, updateGalleryImage, deleteGalleryImage } from '@/services/api';
 import type { GalleryImage } from '@/types/database';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
@@ -27,10 +27,10 @@ export default function AdminGallery() {
     title: '',
     caption: '',
     category: '',
+    image_url: '',
     is_featured: false,
     order_index: 0,
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
@@ -54,10 +54,10 @@ export default function AdminGallery() {
       title: '',
       caption: '',
       category: '',
+      image_url: '',
       is_featured: false,
       order_index: 0,
     });
-    setImageFile(null);
     setEditingImage(null);
   };
 
@@ -67,6 +67,7 @@ export default function AdminGallery() {
       title: image.title || '',
       caption: image.caption || '',
       category: image.category || '',
+      image_url: image.image_url,
       is_featured: image.is_featured,
       order_index: image.order_index,
     });
@@ -76,20 +77,15 @@ export default function AdminGallery() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!editingImage && !imageFile) {
-      toast({ title: 'Error', description: 'Please select an image', variant: 'destructive' });
+    if (!editingImage && !formData.image_url) {
+      toast({ title: 'Error', description: 'Please enter an image URL', variant: 'destructive' });
       return;
     }
     
     setIsSaving(true);
 
     try {
-      let image_url = editingImage?.image_url || '';
-      if (imageFile) {
-        image_url = await uploadImage(imageFile, 'gallery');
-      }
-
-      const imageData = { ...formData, image_url };
+      const imageData = { ...formData };
 
       if (editingImage) {
         await updateGalleryImage(editingImage.id, imageData);
@@ -113,7 +109,6 @@ export default function AdminGallery() {
     if (!confirm('Are you sure you want to delete this image?')) return;
 
     try {
-      await deleteImage(image.image_url);
       await deleteGalleryImage(image.id);
       toast({ title: 'Success', description: 'Image deleted successfully' });
       fetchImages();
@@ -189,16 +184,17 @@ export default function AdminGallery() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="image">Image {!editingImage && '*'}</Label>
+                <Label htmlFor="image_url">Image URL {!editingImage && '*'}</Label>
                 <Input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  id="image_url"
+                  type="url"
+                  placeholder="https://example.com/image.jpg"
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                   required={!editingImage}
                 />
-                {editingImage && (
-                  <img src={editingImage.image_url} alt="Current" className="w-full h-32 object-cover rounded-lg mt-2" />
+                {formData.image_url && (
+                  <img src={formData.image_url} alt="Preview" className="w-full h-32 object-cover rounded-lg mt-2" onError={(e) => (e.currentTarget.style.display = 'none')} />
                 )}
               </div>
               <div className="space-y-2">

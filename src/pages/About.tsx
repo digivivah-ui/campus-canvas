@@ -5,6 +5,7 @@ import { PublicLayout } from '@/layouts/PublicLayout';
 import { getAboutSections, getStats } from '@/services/api';
 import type { AboutSection, Stat } from '@/types/database';
 import { Skeleton } from '@/components/common/Skeleton';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 const iconMap: Record<string, typeof Target> = {
   vision: Eye,
@@ -17,6 +18,9 @@ export default function About() {
   const [sections, setSections] = useState<AboutSection[]>([]);
   const [stats, setStats] = useState<Stat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { getSetting } = useSiteSettings();
+
+  const collegeName = getSetting('college_name', 'Mahatma Gandhi Mahavidhyala Ashta');
 
   useEffect(() => {
     Promise.all([getAboutSections(), getStats()])
@@ -39,11 +43,10 @@ export default function About() {
             className="max-w-3xl"
           >
             <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
-              About MGCM
+              {getSetting('about_hero_title', `About ${collegeName}`)}
             </h1>
             <p className="text-xl text-primary-foreground/80">
-              Since 1995, Mahatma Gandhi College of Management has been committed to academic excellence,
-              ethical values, and creating future leaders who make a difference in the world.
+              {getSetting('about_hero_subtitle', `${collegeName} has been committed to academic excellence, ethical values, and creating future leaders.`)}
             </p>
           </motion.div>
         </div>
@@ -112,7 +115,7 @@ export default function About() {
             viewport={{ once: true }}
             className="font-display text-3xl md:text-4xl font-bold text-primary-foreground text-center mb-12"
           >
-            MGCM by the Numbers
+            {getSetting('about_stats_title', `${collegeName} by the Numbers`)}
           </motion.h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -128,49 +131,6 @@ export default function About() {
                   {stat.value}
                 </div>
                 <div className="text-primary-foreground/80">{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Values */}
-      <section className="section-padding bg-secondary/30">
-        <div className="container-college">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Our Core Values
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Inspired by the teachings of Mahatma Gandhi, we instill these values in every student
-            </p>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { icon: Award, title: 'Excellence', desc: 'Striving for the highest standards in management education and research.' },
-              { icon: Users, title: 'Integrity', desc: 'Upholding truth, honesty, and ethical conduct in all our endeavors.' },
-              { icon: BookOpen, title: 'Service', desc: 'Developing socially responsible leaders committed to community service.' },
-            ].map((value, index) => (
-              <motion.div
-                key={value.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="text-center p-8 bg-card rounded-2xl border border-border hover:shadow-college-lg transition-shadow"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                  <value.icon className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="font-display text-xl font-semibold text-foreground mb-3">
-                  {value.title}
-                </h3>
-                <p className="text-muted-foreground">{value.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -197,12 +157,10 @@ export default function About() {
             className="bg-card rounded-2xl border border-border p-8 text-center"
           >
             <p className="text-lg text-foreground mb-2 font-semibold">
-              Mahatma Gandhi College Of Management
+              {collegeName}
             </p>
             <p className="text-muted-foreground">
-              Ward No 15, Malviya Nagar, Kannod Road<br />
-              Ashta, Sehore – 466116<br />
-              Madhya Pradesh, India
+              {getSetting('address', 'Near Mukharji Ground, Kannod Road, Ashta, District Sehore, Madhya Pradesh')}
             </p>
           </motion.div>
         </div>

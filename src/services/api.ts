@@ -422,32 +422,13 @@ export async function deleteMember(id: string) {
   const { error } = await supabase.from('members').delete().eq('id', id);
   if (error) throw error;
 }
- 
- // Image upload
- export async function uploadImage(file: File, folder: string) {
-   const fileExt = file.name.split('.').pop();
-   const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-   
-   const { error: uploadError } = await supabase.storage
-     .from('images')
-     .upload(fileName, file);
-   
-   if (uploadError) throw uploadError;
-   
-   const { data } = supabase.storage
-     .from('images')
-     .getPublicUrl(fileName);
-   
-   return data.publicUrl;
- }
- 
- export async function deleteImage(url: string) {
-   const path = url.split('/images/')[1];
-   if (!path) return;
-   
-   const { error } = await supabase.storage
-     .from('images')
-     .remove([path]);
-   
-   if (error) throw error;
- }
+// Social Links
+export async function getSocialLinks() {
+  const { data, error } = await supabase
+    .from('social_links')
+    .select('*')
+    .eq('is_active', true)
+    .order('order_index');
+  if (error) throw error;
+  return data;
+}

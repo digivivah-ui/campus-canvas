@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { getAllMembers, createMember, updateMember, deleteMember, uploadImage } from '@/services/api';
+import { getAllMembers, createMember, updateMember, deleteMember } from '@/services/api';
 import type { Member } from '@/types/database';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
@@ -45,10 +45,10 @@ export default function AdminMembers() {
     bio: '',
     email: '',
     phone: '',
+    photo_url: '',
     order_index: 0,
     is_active: true,
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
@@ -75,10 +75,10 @@ export default function AdminMembers() {
       bio: '',
       email: '',
       phone: '',
+      photo_url: '',
       order_index: 0,
       is_active: true,
     });
-    setImageFile(null);
     setEditingMember(null);
   };
 
@@ -91,6 +91,7 @@ export default function AdminMembers() {
       bio: member.bio || '',
       email: member.email || '',
       phone: member.phone || '',
+      photo_url: member.photo_url || '',
       order_index: member.order_index,
       is_active: member.is_active,
     });
@@ -102,12 +103,7 @@ export default function AdminMembers() {
     setIsSaving(true);
 
     try {
-      let photo_url = editingMember?.photo_url;
-      if (imageFile) {
-        photo_url = await uploadImage(imageFile, 'members');
-      }
-
-      const memberData = { ...formData, photo_url };
+      const memberData = { ...formData };
 
       if (editingMember) {
         await updateMember(editingMember.id, memberData);
@@ -300,13 +296,17 @@ export default function AdminMembers() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="image">Photo</Label>
+                <Label htmlFor="photo_url">Photo URL</Label>
                 <Input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  id="photo_url"
+                  type="url"
+                  placeholder="https://example.com/photo.jpg"
+                  value={formData.photo_url}
+                  onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
                 />
+                {formData.photo_url && (
+                  <img src={formData.photo_url} alt="Preview" className="h-20 w-auto rounded-lg border object-cover mt-2" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                )}
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
