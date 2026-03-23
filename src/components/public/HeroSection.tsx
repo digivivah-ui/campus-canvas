@@ -7,6 +7,7 @@ import { getHomepageContent } from '@/services/api';
 import type { HomepageContent } from '@/types/database';
 import { HeroSkeleton } from '@/components/common/Skeleton';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { withTimeout } from '@/lib/utils';
 
 export function HeroSection() {
   const [content, setContent] = useState<HomepageContent | null>(null);
@@ -14,13 +15,22 @@ export function HeroSection() {
   const { getSetting } = useSiteSettings();
 
   useEffect(() => {
-    getHomepageContent()
-      .then((data) => {
+    let mounted = true;
+    async function load() {
+      try {
+        const result = await withTimeout(getHomepageContent(), 10000, 'Load timed out');
+        const data = Array.isArray(result) ? result : [];
         const hero = data.find((item) => item.section_key === 'hero');
-        setContent(hero || null);
-      })
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+        if (mounted) setContent(hero || null);
+      } catch (err) {
+        console.error('HeroSection load error:', err);
+        if (mounted) setContent(null);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
   }, []);
 
   if (isLoading) return <HeroSkeleton />;
@@ -101,13 +111,13 @@ export function HeroSection() {
             transition={{ duration: 0.8, delay: 0.4 }}
           >
             <Link to={content?.cta_link || '/departments'}>
-              <Button size="lg" className="bg-accent text-accent-foreground shadow-gold">
+              <Button size="lg" className="bg-accent text-accent-foreground shadow-gold hover:bg-yellow-300">
                 {content?.cta_text || 'Explore Programs'}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link to="/contact">
-              <Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground">
+              <Button size="lg"  className="bg-accent text-accent-foreground shadow-gold hover:bg-yellow-300">
                 Contact Us
               </Button>
             </Link>

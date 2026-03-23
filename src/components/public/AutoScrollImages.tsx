@@ -8,10 +8,21 @@ export function AutoScrollImages() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getGalleryImages()
-      .then((data) => setImages(data.filter(img => img.is_featured)))
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+    let mounted = true;
+    async function load() {
+      try {
+        const result = await getGalleryImages();
+        const data = Array.isArray(result) ? result : [];
+        if (mounted) setImages(data.filter(img => img.is_featured));
+      } catch (err) {
+        console.error('AutoScrollImages load error:', err);
+        if (mounted) setImages([]);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
   }, []);
 
   if (isLoading) {

@@ -6,22 +6,22 @@ const videos = [
   {
     id: '1',
     title: 'Campus Tour',
-    youtubeId: 'dQw4w9WgXcQ',
+    youtubeId: '-OHNqU0bflE',
   },
   {
     id: '2',
     title: 'Student Life',
-    youtubeId: 'dQw4w9WgXcQ',
+    youtubeId: 'xCbEs2u7brU',
   },
   {
     id: '3',
     title: 'Annual Day Celebration',
-    youtubeId: 'dQw4w9WgXcQ',
+    youtubeId: 'xCbEs2u7brU',
   },
   {
     id: '4',
     title: 'NSS Activities',
-    youtubeId: 'dQw4w9WgXcQ',
+    youtubeId: 'xCbEs2u7brU',
   },
 ];
 

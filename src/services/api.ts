@@ -11,168 +11,280 @@ import type {
   Member,
 } from '@/types/database';
  
- // Homepage Content
- export async function getHomepageContent() {
-   const { data, error } = await supabase
-     .from('homepage_content')
-     .select('*')
-     .eq('is_active', true)
-     .order('order_index');
-   
-   if (error) throw error;
-   return data as HomepageContent[];
- }
+// Homepage Content
+export async function getHomepageContent() {
+  try {
+    const { data, error } = await supabase
+      .from('homepage_content')
+      .select('*')
+      .eq('is_active', true)
+      .order('order_index');
+
+    if (error) {
+      console.error('Supabase error (getHomepageContent):', error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Supabase error (getHomepageContent):', err);
+    return [];
+  }
+}
  
  // About Section
  export async function getAboutSections() {
-   const { data, error } = await supabase
-     .from('about_section')
-     .select('*')
-     .order('order_index');
-   
-   if (error) throw error;
-   return data as AboutSection[];
+   try {
+     const { data, error } = await supabase
+       .from('about_section')
+       .select('*')
+       .order('order_index');
+
+     if (error) {
+       console.error('Supabase error (getAboutSections):', error);
+       return [];
+     }
+     return Array.isArray(data) ? data : [];
+   } catch (err) {
+     console.error('Supabase error (getAboutSections):', err);
+     return [];
+   }
  }
  
  // Departments
  export async function getDepartments() {
-   const { data, error } = await supabase
-     .from('departments')
-     .select('*')
-     .eq('is_active', true)
-     .order('order_index');
-   
-   if (error) throw error;
-   return data as Department[];
+   try {
+     const { data, error } = await supabase
+       .from('departments')
+       .select('*')
+       .eq('is_active', true)
+       .order('order_index');
+
+     if (error) {
+       console.error('Supabase error (getDepartments):', error);
+       return [];
+     }
+     return Array.isArray(data) ? data : [];
+   } catch (err) {
+     console.error('Supabase error (getDepartments):', err);
+     return [];
+   }
  }
  
  export async function getDepartmentById(id: string) {
-   const { data, error } = await supabase
-     .from('departments')
-     .select('*')
-     .eq('id', id)
-     .single();
-   
-   if (error) throw error;
-   return data as Department;
+   try {
+     const { data, error } = await supabase
+       .from('departments')
+       .select('*')
+       .eq('id', id)
+       .single();
+
+     if (error) {
+       console.error('Supabase error (getDepartmentById):', error);
+       return null;
+     }
+     return data as Department | null;
+   } catch (err) {
+     console.error('Supabase error (getDepartmentById):', err);
+     return null;
+   }
  }
  
  // Faculty
  export async function getFaculty() {
-   const { data, error } = await supabase
-     .from('faculty')
-     .select('*, departments(*)')
-     .eq('is_active', true)
-     .order('order_index');
-   
-   if (error) throw error;
-   return data as Faculty[];
+   try {
+     const { data, error } = await supabase
+       .from('faculty')
+       .select('*, departments(*)')
+       .eq('is_active', true)
+       .order('order_index');
+
+     if (error) {
+       console.error('Supabase error (getFaculty):', error);
+       return [];
+     }
+     return Array.isArray(data) ? data : [];
+   } catch (err) {
+     console.error('Supabase error (getFaculty):', err);
+     return [];
+   }
  }
  
  export async function getFacultyByDepartment(departmentId: string) {
-   const { data, error } = await supabase
-     .from('faculty')
-     .select('*, departments(*)')
-     .eq('department_id', departmentId)
-     .eq('is_active', true)
-     .order('order_index');
-   
-   if (error) throw error;
-   return data as Faculty[];
+   try {
+     const { data, error } = await supabase
+       .from('faculty')
+       .select('*, departments(*)')
+       .eq('department_id', departmentId)
+       .eq('is_active', true)
+       .order('order_index');
+
+     if (error) {
+       console.error('Supabase error (getFacultyByDepartment):', error);
+       return [];
+     }
+     return Array.isArray(data) ? data : [];
+   } catch (err) {
+     console.error('Supabase error (getFacultyByDepartment):', err);
+     return [];
+   }
  }
  
  // Events
  export async function getEvents() {
-   const { data, error } = await supabase
-     .from('events')
-     .select('*')
-     .eq('is_active', true)
-     .order('event_date', { ascending: true });
-   
-   if (error) throw error;
-   return data as Event[];
+   try {
+     const { data, error } = await supabase
+       .from('events')
+       .select('*')
+       .eq('is_active', true)
+       .order('event_date', { ascending: true });
+
+     if (error) {
+       console.error('Supabase error (getEvents):', error);
+       return [];
+     }
+     return Array.isArray(data) ? data : [];
+   } catch (err) {
+     console.error('Supabase error (getEvents):', err);
+     return [];
+   }
  }
  
  export async function getUpcomingEvents() {
-   const { data, error } = await supabase
-     .from('events')
-     .select('*')
-     .eq('is_active', true)
-     .gte('event_date', new Date().toISOString())
-     .order('event_date', { ascending: true })
-     .limit(5);
-   
-   if (error) throw error;
-   return data as Event[];
+   try {
+     const { data, error } = await supabase
+       .from('events')
+       .select('*')
+       .eq('is_active', true)
+       .gte('event_date', new Date().toISOString())
+       .order('event_date', { ascending: true })
+       .limit(5);
+
+     if (error) {
+       console.error('Supabase error (getUpcomingEvents):', error);
+       return [];
+     }
+     return Array.isArray(data) ? data : [];
+   } catch (err) {
+     console.error('Supabase error (getUpcomingEvents):', err);
+     return [];
+   }
  }
  
  export async function getFeaturedEvents() {
-   const { data, error } = await supabase
-     .from('events')
-     .select('*')
-     .eq('is_active', true)
-     .eq('is_featured', true)
-     .order('event_date', { ascending: true });
-   
-   if (error) throw error;
-   return data as Event[];
+   try {
+     const { data, error } = await supabase
+       .from('events')
+       .select('*')
+       .eq('is_active', true)
+       .eq('is_featured', true)
+       .order('event_date', { ascending: true });
+
+     if (error) {
+       console.error('Supabase error (getFeaturedEvents):', error);
+       return [];
+     }
+     return Array.isArray(data) ? data : [];
+   } catch (err) {
+     console.error('Supabase error (getFeaturedEvents):', err);
+     return [];
+   }
  }
  
  // Gallery
  export async function getGalleryImages() {
-   const { data, error } = await supabase
-     .from('gallery')
-     .select('*')
-     .order('order_index');
-   
-   if (error) throw error;
-   return data as GalleryImage[];
+   try {
+     const { data, error } = await supabase
+       .from('gallery')
+       .select('*')
+       .order('order_index');
+
+     if (error) {
+       console.error('Supabase error (getGalleryImages):', error);
+       return [];
+     }
+     return Array.isArray(data) ? data : [];
+   } catch (err) {
+     console.error('Supabase error (getGalleryImages):', err);
+     return [];
+   }
  }
  
  export async function getFeaturedGalleryImages() {
-   const { data, error } = await supabase
-     .from('gallery')
-     .select('*')
-     .eq('is_featured', true)
-     .order('order_index')
-     .limit(6);
-   
-   if (error) throw error;
-   return data as GalleryImage[];
+   try {
+     const { data, error } = await supabase
+       .from('gallery')
+       .select('*')
+       .eq('is_featured', true)
+       .order('order_index')
+       .limit(6);
+
+     if (error) {
+       console.error('Supabase error (getFeaturedGalleryImages):', error);
+       return [];
+     }
+     return Array.isArray(data) ? data : [];
+   } catch (err) {
+     console.error('Supabase error (getFeaturedGalleryImages):', err);
+     return [];
+   }
  }
  
  // Stats
  export async function getStats() {
-   const { data, error } = await supabase
-     .from('stats')
-     .select('*')
-     .eq('is_active', true)
-     .order('order_index');
-   
-  if (error) throw error;
-  return data as Stat[];
-}
+   try {
+     const { data, error } = await supabase
+       .from('stats')
+       .select('*')
+       .order('order_index');
+
+     if (error) {
+       console.error('Supabase error (getStats):', error);
+       return [];
+     }
+     const rows = Array.isArray(data) ? data : [];
+     return rows.filter((row: { is_active?: boolean | null }) => row.is_active !== false);
+   } catch (err) {
+     console.error('Supabase error (getStats):', err);
+     return [];
+   }
+ }
 
 // Members
 export async function getMembers() {
-  const { data, error } = await supabase
-    .from('members')
-    .select('*')
-    .eq('is_active', true)
-    .order('order_index');
-  
-  if (error) throw error;
-  return data as Member[];
+  try {
+    const { data, error } = await supabase
+      .from('members')
+      .select('*')
+      .eq('is_active', true)
+      .order('order_index');
+
+    if (error) {
+      console.error('Supabase error (getMembers):', error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Supabase error (getMembers):', err);
+    return [];
+  }
 }
 
 export async function getAllMembers() {
-  const { data, error } = await supabase
-    .from('members')
-    .select('*')
-    .order('order_index');
-  
-  if (error) throw error;
-  return data as Member[];
+  try {
+    const { data, error } = await supabase
+      .from('members')
+      .select('*')
+      .order('order_index');
+
+    if (error) {
+      console.error('Supabase error (getAllMembers):', error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Supabase error (getAllMembers):', err);
+    return [];
+  }
 }
 
 // Contact
@@ -192,13 +304,21 @@ export async function submitContactForm(data: {
  
  // Admin Functions
  export async function getContactSubmissions() {
-   const { data, error } = await supabase
-     .from('contact_submissions')
-     .select('*')
-     .order('created_at', { ascending: false });
-   
-   if (error) throw error;
-   return data as ContactSubmission[];
+   try {
+     const { data, error } = await supabase
+       .from('contact_submissions')
+       .select('*')
+       .order('created_at', { ascending: false });
+
+     if (error) {
+       console.error('Supabase error (getContactSubmissions):', error);
+       return [];
+     }
+     return Array.isArray(data) ? data : [];
+   } catch (err) {
+     console.error('Supabase error (getContactSubmissions):', err);
+     return [];
+   }
  }
  
  export async function markContactAsRead(id: string) {
@@ -316,79 +436,149 @@ export async function deleteGalleryImage(id: string) {
 }
 
 export async function getAllHomepageContent() {
-  const { data, error } = await supabase
-    .from('homepage_content')
-    .select('*')
-    .order('order_index');
-  if (error) throw error;
-  return data as HomepageContent[];
+  try {
+    const { data, error } = await supabase
+      .from('homepage_content')
+      .select('*')
+      .order('order_index');
+
+    if (error) {
+      console.error('Supabase error (getAllHomepageContent):', error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Supabase error (getAllHomepageContent):', err);
+    return [];
+  }
 }
 
 export async function updateHomepageContent(id: string, data: Partial<HomepageContent>) {
-  const { data: result, error } = await supabase
-    .from('homepage_content')
-    .update(data as any)
-    .eq('id', id)
-    .select()
-    .single();
-  if (error) throw error;
-  return result;
+  try {
+    const { data: result, error } = await supabase
+      .from('homepage_content')
+      .update(data as any)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      console.error('Supabase updateHomepageContent:', error);
+      throw new Error(error.message || 'Update failed');
+    }
+    return result;
+  } catch (err) {
+    if (err instanceof Error) throw err;
+    throw new Error('Update failed');
+  }
 }
 
 export async function getAllAboutSections() {
-  const { data, error } = await supabase
-    .from('about_section')
-    .select('*')
-    .order('order_index');
-  if (error) throw error;
-  return data as AboutSection[];
+  try {
+    const { data, error } = await supabase
+      .from('about_section')
+      .select('*')
+      .order('order_index');
+
+    if (error) {
+      console.error('Supabase error (getAllAboutSections):', error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Supabase error (getAllAboutSections):', err);
+    return [];
+  }
 }
 
 export async function updateAboutSection(id: string, data: Partial<AboutSection>) {
-  const { data: result, error } = await supabase
-    .from('about_section')
-    .update(data as any)
-    .eq('id', id)
-    .select()
-    .single();
-  if (error) throw error;
-  return result;
+  try {
+    const { data: result, error } = await supabase
+      .from('about_section')
+      .update(data as any)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      console.error('Supabase updateAboutSection:', error);
+      throw new Error(error.message || 'Update failed');
+    }
+    return result;
+  } catch (err) {
+    if (err instanceof Error) throw err;
+    throw new Error('Update failed');
+  }
 }
 
 export async function getAllDepartments() {
-  const { data, error } = await supabase
-    .from('departments')
-    .select('*')
-    .order('order_index');
-  if (error) throw error;
-  return data as Department[];
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*')
+      .order('order_index');
+
+    if (error) {
+      console.error('Supabase error (getAllDepartments):', error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Supabase error (getAllDepartments):', err);
+    return [];
+  }
 }
 
 export async function getAllFaculty() {
-  const { data, error } = await supabase
-    .from('faculty')
-    .select('*, departments(*)')
-    .order('order_index');
-  if (error) throw error;
-  return data as Faculty[];
+  try {
+    const { data, error } = await supabase
+      .from('faculty')
+      .select('*, departments(*)')
+      .order('order_index');
+
+    if (error) {
+      console.error('Supabase error (getAllFaculty):', error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Supabase error (getAllFaculty):', err);
+    return [];
+  }
 }
 
 export async function getAllEvents() {
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data as Event[];
+  try {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Supabase error (getAllEvents):', error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Supabase error (getAllEvents):', err);
+    return [];
+  }
 }
 
 export async function getAllGalleryImages() {
-  const { data, error } = await supabase
-    .from('gallery')
-    .select('*')
-    .order('order_index');
-  if (error) throw error;
-  return data as GalleryImage[];
+  try {
+    const { data, error } = await supabase
+      .from('gallery')
+      .select('*')
+      .order('order_index');
+
+    if (error) {
+      console.error('Supabase error (getAllGalleryImages):', error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Supabase error (getAllGalleryImages):', err);
+    return [];
+  }
 }
 
 export async function deleteContactSubmission(id: string) {
@@ -424,11 +614,20 @@ export async function deleteMember(id: string) {
 }
 // Social Links
 export async function getSocialLinks() {
-  const { data, error } = await supabase
-    .from('social_links')
-    .select('*')
-    .eq('is_active', true)
-    .order('order_index');
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from('social_links')
+      .select('*')
+      .eq('is_active', true)
+      .order('order_index');
+
+    if (error) {
+      console.error('Supabase error (getSocialLinks):', error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error('Supabase error (getSocialLinks):', err);
+    return [];
+  }
 }

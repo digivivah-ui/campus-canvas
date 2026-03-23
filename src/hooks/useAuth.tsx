@@ -1,6 +1,7 @@
  import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
  import { User, Session } from '@supabase/supabase-js';
  import { supabase } from '@/integrations/supabase/client';
+ import { withTimeout } from '@/lib/utils';
  
  interface AuthContextType {
    user: User | null;
@@ -41,29 +42,30 @@
    };
  
    useEffect(() => {
-     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-       async (event, session) => {
-         setSession(session);
-         setUser(session?.user ?? null);
-         
-         if (session?.user) {
-           const adminStatus = await checkAdminRole(session.user.id);
-           setIsAdmin(adminStatus);
-         } else {
-           setIsAdmin(false);
-         }
-         setIsLoading(false);
-       }
-     );
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
+        if (session?.user) {
+          checkAdminRole(session.user.id).then(setIsAdmin).catch(() => setIsAdmin(false));
+        } else {
+          setIsAdmin(false);
+        }
+      }
+    );
  
-     supabase.auth.getSession().then(async ({ data: { session } }) => {
+     withTimeout(supabase.auth.getSession(), 8000, 'Auth timeout').then(({ data: { session } }) => {
        setSession(session);
        setUser(session?.user ?? null);
-       
+       setIsLoading(false);
        if (session?.user) {
-         const adminStatus = await checkAdminRole(session.user.id);
-         setIsAdmin(adminStatus);
+         withTimeout(checkAdminRole(session.user.id), 5000).then(setIsAdmin).catch(() => setIsAdmin(false));
        }
+     }).catch(() => {
+       setSession(null);
+       setUser(null);
+       setIsAdmin(false);
        setIsLoading(false);
      });
  

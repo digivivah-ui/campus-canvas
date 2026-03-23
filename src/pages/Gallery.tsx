@@ -12,17 +12,29 @@
    const [selectedCategory, setSelectedCategory] = useState<string>('all');
  
    useEffect(() => {
-     getGalleryImages()
-       .then(setImages)
-       .catch(console.error)
-       .finally(() => setIsLoading(false));
+     let mounted = true;
+     async function load() {
+       try {
+         const result = await getGalleryImages();
+         const data = Array.isArray(result) ? result : [];
+         if (mounted) setImages(data);
+       } catch (err) {
+         console.error('Gallery load error:', err);
+         if (mounted) setImages([]);
+       } finally {
+         if (mounted) setIsLoading(false);
+       }
+     }
+     load();
+     return () => { mounted = false; };
    }, []);
- 
-   const categories = ['all', ...new Set(images.map((img) => img.category).filter(Boolean))];
-   
+
+   const safeImages = Array.isArray(images) ? images : [];
+   const categories = ['all', ...new Set(safeImages.map((img) => img.category).filter(Boolean))];
+
    const filteredImages = selectedCategory === 'all'
-     ? images
-     : images.filter((img) => img.category === selectedCategory);
+     ? safeImages
+     : safeImages.filter((img) => img.category === selectedCategory);
  
    return (
      <PublicLayout>

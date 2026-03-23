@@ -17,10 +17,21 @@ export function AboutSection() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getAboutSections()
-      .then(setSections)
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+    let mounted = true;
+    async function load() {
+      try {
+        const result = await getAboutSections();
+        const data = Array.isArray(result) ? result : [];
+        if (mounted) setSections(data);
+      } catch (err) {
+        console.error('AboutSection load error:', err);
+        if (mounted) setSections([]);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
   }, []);
 
   return (
@@ -60,7 +71,7 @@ export function AboutSection() {
             </div>
           ) : (
             <div className="space-y-10">
-              {sections.map((section, index) => {
+              {(Array.isArray(sections) ? sections : []).map((section, index) => {
                 const Icon = iconMap[section.section_key] || Target;
                 return (
                   <motion.div

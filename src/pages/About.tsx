@@ -23,13 +23,28 @@ export default function About() {
   const collegeName = getSetting('college_name', 'Mahatma Gandhi Mahavidhyala Ashta');
 
   useEffect(() => {
-    Promise.all([getAboutSections(), getStats()])
-      .then(([aboutData, statsData]) => {
-        setSections(aboutData);
-        setStats(statsData);
-      })
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+    let mounted = true;
+    async function load() {
+      try {
+        const [aboutResult, statsResult] = await Promise.all([getAboutSections(), getStats()]);
+        const aboutData = Array.isArray(aboutResult) ? aboutResult : [];
+        const statsData = Array.isArray(statsResult) ? statsResult : [];
+        if (mounted) {
+          setSections(aboutData);
+          setStats(statsData);
+        }
+      } catch (err) {
+        console.error('About load error:', err);
+        if (mounted) {
+          setSections([]);
+          setStats([]);
+        }
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
   }, []);
 
   return (
@@ -70,7 +85,7 @@ export default function About() {
             </div>
           ) : (
             <div className="space-y-16">
-              {sections.map((section, index) => {
+              {(Array.isArray(sections) ? sections : []).map((section, index) => {
                 const Icon = iconMap[section.section_key] || Target;
                 const isEven = index % 2 === 0;
                 
@@ -118,7 +133,7 @@ export default function About() {
             {getSetting('about_stats_title', `${collegeName} by the Numbers`)}
           </motion.h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
+            {(Array.isArray(stats) ? stats : []).map((stat, index) => (
               <motion.div
                 key={stat.id}
                 initial={{ opacity: 0, y: 20 }}

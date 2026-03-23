@@ -11,10 +11,21 @@
    const [isLoading, setIsLoading] = useState(true);
  
    useEffect(() => {
-     getDepartments()
-       .then(setDepartments)
-       .catch(console.error)
-       .finally(() => setIsLoading(false));
+     let mounted = true;
+     async function load() {
+       try {
+         const result = await getDepartments();
+         const data = Array.isArray(result) ? result : [];
+         if (mounted) setDepartments(data);
+       } catch (err) {
+         console.error('Departments load error:', err);
+         if (mounted) setDepartments([]);
+       } finally {
+         if (mounted) setIsLoading(false);
+       }
+     }
+     load();
+     return () => { mounted = false; };
    }, []);
  
    return (
@@ -47,13 +58,13 @@
                  <CardSkeleton key={i} />
                ))}
              </div>
-           ) : departments.length === 0 ? (
+           ) : (Array.isArray(departments) ? departments : []).length === 0 ? (
              <div className="text-center py-20">
                <p className="text-muted-foreground text-lg">No departments available yet.</p>
              </div>
            ) : (
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-               {departments.map((dept, index) => (
+               {(Array.isArray(departments) ? departments : []).map((dept, index) => (
                  <DepartmentCard key={dept.id} department={dept} index={index} />
                ))}
              </div>

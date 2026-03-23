@@ -10,10 +10,11 @@
  export function GalleryGrid({ images }: GalleryGridProps) {
    const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
  
-   return (
-     <>
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-         {images.map((image, index) => (
+  const safeImages = Array.isArray(images) ? images : [];
+  return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {safeImages.map((image, index) => (
            <motion.div
              key={image.id}
              initial={{ opacity: 0, scale: 0.9 }}

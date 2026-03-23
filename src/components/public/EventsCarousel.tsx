@@ -2,7 +2,7 @@
  import { motion } from 'framer-motion';
  import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
  import { format } from 'date-fns';
- import { getUpcomingEvents } from '@/services/api';
+ import { getUpcomingEvents, getFeaturedEvents, getEvents } from '@/services/api';
  import type { Event } from '@/types/database';
  import { Skeleton } from '@/components/common/Skeleton';
  
@@ -12,10 +12,29 @@
    const [currentIndex, setCurrentIndex] = useState(0);
  
    useEffect(() => {
-     getUpcomingEvents()
-       .then(setEvents)
-       .catch(console.error)
-       .finally(() => setIsLoading(false));
+     let mounted = true;
+     async function load() {
+       try {
+         let result = await getUpcomingEvents();
+         let data = Array.isArray(result) ? result : [];
+         if (data.length === 0) {
+           result = await getFeaturedEvents();
+           data = Array.isArray(result) ? result : [];
+         }
+         if (data.length === 0) {
+           result = await getEvents();
+           data = Array.isArray(result) ? result.slice(0, 5) : [];
+         }
+         if (mounted) setEvents(data);
+       } catch (err) {
+         console.error('EventsCarousel load error:', err);
+         if (mounted) setEvents([]);
+       } finally {
+         if (mounted) setIsLoading(false);
+       }
+     }
+     load();
+     return () => { mounted = false; };
    }, []);
  
    const nextSlide = useCallback(() => {
@@ -35,7 +54,7 @@
  
    if (isLoading) {
      return (
-       <div className="relative h-64 bg-secondary rounded-2xl overflow-hidden">
+       <div className="relative h-64 lg:h-80 bg-secondary rounded-2xl overflow-hidden">
          <Skeleton className="w-full h-full" />
        </div>
      );
@@ -43,19 +62,19 @@
  
    if (events.length === 0) {
      return (
-       <div className="relative h-64 bg-secondary rounded-2xl flex items-center justify-center">
-         <p className="text-muted-foreground">No upcoming events</p>
+       <div className="relative h-64 lg:h-80 bg-secondary rounded-2xl flex items-center justify-center">
+         <p className="text-muted-foreground">No events yet</p>
        </div>
      );
    }
  
    return (
      <div className="relative overflow-hidden rounded-2xl bg-primary">
-       <div className="relative h-80">
+       <div className="relative h-80 lg:h-[28rem] min-h-[20rem]">
          {events.map((event, index) => (
            <motion.div
              key={event.id}
-             className="absolute inset-0 p-8 flex flex-col justify-end"
+             className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end"
              initial={{ opacity: 0, x: 100 }}
              animate={{
                opacity: index === currentIndex ? 1 : 0,
@@ -63,12 +82,14 @@
              }}
              transition={{ duration: 0.5 }}
            >
-             {event.image_url && (
+             {event.image_url ? (
                <img
                  src={event.image_url}
                  alt={event.title}
-                 className="absolute inset-0 w-full h-full object-cover opacity-30"
+                 className="absolute inset-0 w-full h-full object-cover opacity-40"
                />
+             ) : (
+               <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
              )}
              <div className="relative z-10">
                {event.is_featured && (

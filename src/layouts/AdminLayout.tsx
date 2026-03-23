@@ -120,7 +120,7 @@ const navItems = [
              </div>
              <Button
                variant="outline"
-               className="w-full border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+               className="bg-accent text-accent-foreground shadow-gold hover:bg-yellow-200"
                onClick={handleSignOut}
              >
                <LogOut className="h-4 w-4 mr-2" />

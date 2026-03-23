@@ -24,10 +24,21 @@ const Index = () => {
   const { getSetting } = useSiteSettings();
 
   useEffect(() => {
-    getDepartments()
-      .then((data) => setDepartments(data.slice(0, 4)))
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+    let mounted = true;
+    async function load() {
+      try {
+        const result = await getDepartments();
+        const data = Array.isArray(result) ? result : [];
+        if (mounted) setDepartments(data.slice(0, 4));
+      } catch (err) {
+        console.error('Index load error:', err);
+        if (mounted) setDepartments([]);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
   }, []);
 
   const collegeName = getSetting('college_name', 'Mahatma Gandhi Mahavidhyala Ashta');
@@ -66,7 +77,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {departments.map((dept, index) => (
+              {(Array.isArray(departments) ? departments : []).map((dept, index) => (
                 <DepartmentCard key={dept.id} department={dept} index={index} />
               ))}
             </div>
@@ -132,12 +143,12 @@ const Index = () => {
             </p>
             <div className="flex flex-wrap justify-center gap-3 md:gap-4">
               <Link to="/contact">
-                <Button size="lg" className="bg-accent text-accent-foreground shadow-gold">
+                <Button size="lg" className="bg-accent text-accent-foreground shadow-gold hover:bg-yellow-200">
                   {getSetting('cta_button_text', 'Apply Now')}
                 </Button>
               </Link>
               <a href={getSetting('university_link', 'https://bubhopal.ac.in/1068/Home')} target="_blank" rel="noopener noreferrer">
-                <Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground">
+                <Button size="lg" className="bg-accent text-accent-foreground shadow-gold hover:bg-yellow-200">
                   {getSetting('university_button_text', 'Visit University')}
                 </Button>
               </a>

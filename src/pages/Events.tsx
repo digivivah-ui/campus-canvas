@@ -13,14 +13,26 @@
    const [isLoading, setIsLoading] = useState(true);
  
    useEffect(() => {
-     getEvents()
-       .then(setEvents)
-       .catch(console.error)
-       .finally(() => setIsLoading(false));
+     let mounted = true;
+     async function load() {
+       try {
+         const result = await getEvents();
+         const data = Array.isArray(result) ? result : [];
+         if (mounted) setEvents(data);
+       } catch (err) {
+         console.error('Events load error:', err);
+         if (mounted) setEvents([]);
+       } finally {
+         if (mounted) setIsLoading(false);
+       }
+     }
+     load();
+     return () => { mounted = false; };
    }, []);
- 
-   const upcomingEvents = events.filter((e) => e.event_date && isFuture(new Date(e.event_date)));
-   const pastEvents = events.filter((e) => e.event_date && isPast(new Date(e.event_date)));
+
+   const safeEvents = Array.isArray(events) ? events : [];
+   const upcomingEvents = safeEvents.filter((e) => e.event_date && isFuture(new Date(e.event_date)));
+   const pastEvents = safeEvents.filter((e) => e.event_date && isPast(new Date(e.event_date)));
  
    return (
      <PublicLayout>
@@ -51,7 +63,7 @@
                  <Skeleton key={i} className="h-32 w-full" />
                ))}
              </div>
-           ) : events.length === 0 ? (
+           ) : safeEvents.length === 0 ? (
              <div className="text-center py-20">
                <p className="text-muted-foreground text-lg">No events available yet.</p>
              </div>
@@ -65,7 +77,7 @@
                    Past ({pastEvents.length})
                  </TabsTrigger>
                  <TabsTrigger value="all">
-                   All ({events.length})
+                   All ({safeEvents.length})
                  </TabsTrigger>
                </TabsList>
  
@@ -90,7 +102,7 @@
                </TabsContent>
  
                <TabsContent value="all" className="space-y-6">
-                 {events.map((event, index) => (
+                 {safeEvents.map((event, index) => (
                    <EventCard key={event.id} event={event} index={index} />
                  ))}
                </TabsContent>

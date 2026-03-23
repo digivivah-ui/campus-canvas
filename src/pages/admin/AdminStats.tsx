@@ -43,11 +43,18 @@ export default function AdminStats() {
   const handleSubmit = async () => {
     if (!form.label || !form.value) { toast.error('Label and Value are required'); return; }
     try {
+      const payload = {
+        label: String(form.label).trim(),
+        value: String(form.value).trim(),
+        icon: form.icon || 'award',
+        order_index: Number(form.order_index) || 0,
+        is_active: form.is_active === true || form.is_active !== false,
+      };
       if (editId) {
-        await supabase.from('stats').update(form as any).eq('id', editId);
+        await supabase.from('stats').update(payload as any).eq('id', editId);
         toast.success('Stat updated');
       } else {
-        await supabase.from('stats').insert([form as any]);
+        await supabase.from('stats').insert([payload as any]);
         toast.success('Stat added');
       }
       setDialogOpen(false);
@@ -58,7 +65,13 @@ export default function AdminStats() {
   };
 
   const handleEdit = (stat: Stat) => {
-    setForm({ label: stat.label, value: stat.value, icon: stat.icon || 'award', order_index: stat.order_index, is_active: stat.is_active });
+    setForm({
+      label: String(stat.label ?? ''),
+      value: String(stat.value ?? ''),
+      icon: stat.icon || 'award',
+      order_index: Number(stat.order_index) ?? 0,
+      is_active: stat.is_active !== false,
+    });
     setEditId(stat.id);
     setDialogOpen(true);
   };

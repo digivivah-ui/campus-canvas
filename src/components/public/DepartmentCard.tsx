@@ -66,7 +66,7 @@
                  </div>
                )}
  
-               {department.courses && department.courses.length > 0 && (
+               {Array.isArray(department.courses) && department.courses.length > 0 && (
                  <div>
                    <h4 className="font-semibold text-sm text-foreground mb-2">Programs Offered</h4>
                    <ul className="space-y-2">

@@ -28,13 +28,22 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
       .from('site_settings')
       .select('setting_key, setting_value')
       .then(({ data, error }) => {
-        if (!error && data) {
+        if (error) {
+          console.error('Supabase error (useSiteSettings):', error);
+          setSettings({});
+        } else {
+          const arr = Array.isArray(data) ? data : [];
           const map: SiteSettings = {};
-          data.forEach((row: any) => {
-            map[row.setting_key] = row.setting_value || '';
+          arr.forEach((row: { setting_key?: string; setting_value?: string }) => {
+            if (row.setting_key) map[row.setting_key] = row.setting_value || '';
           });
           setSettings(map);
         }
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error('useSiteSettings fetch error:', err);
+        setSettings({});
         setIsLoading(false);
       });
   };

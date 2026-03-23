@@ -7,38 +7,68 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { withTimeout } from '@/lib/utils';
 import { Skeleton } from '@/components/common/Skeleton';
 import type { HomepageContent } from '@/types/database';
 
 export default function AdminHomepage() {
   const [sections, setSections] = useState<HomepageContent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
-    getAllHomepageContent()
-      .then(setSections)
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+    let mounted = true;
+    async function load() {
+      try {
+        const result = await withTimeout(getAllHomepageContent(), 10000, 'Load timed out');
+        const data = Array.isArray(result) ? result : [];
+        if (mounted) setSections(data);
+      } catch (err) {
+        console.error('AdminHomepage load error:', err);
+        if (mounted) setSections([]);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
   }, []);
 
   const handleChange = (id: string, field: string, value: string | boolean) => {
-    setSections(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+    setSections(prev => (Array.isArray(prev) ? prev : []).map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
   const handleSave = async (section: HomepageContent) => {
+    if (savingId) return;
+    setSavingId(section.id);
     try {
-      await updateHomepageContent(section.id, {
-        title: section.title,
-        subtitle: section.subtitle,
-        content: section.content,
-        image_url: section.image_url,
-        cta_text: section.cta_text,
-        cta_link: section.cta_link,
-        is_active: section.is_active,
-      });
+      await withTimeout(
+        updateHomepageContent(section.id, {
+          title: section.title,
+          subtitle: section.subtitle,
+          content: section.content,
+          image_url: section.image_url,
+          cta_text: section.cta_text,
+          cta_link: section.cta_link,
+          is_active: section.is_active,
+        }),
+        10000,
+        'Save timed out'
+      );
       toast.success(`"${section.section_key}" updated!`);
-    } catch {
-      toast.error('Failed to save');
+    } catch (err: unknown) {
+      let msg = 'Failed to save';
+      if (err instanceof Error) {
+        if (err.message === 'Save timed out') {
+          msg = 'Request timed out. Check your connection.';
+        } else {
+          msg = err.message;
+        }
+      }
+      toast.error(msg);
+      console.error('Save error:', err);
+    } finally {
+      setSavingId(null);
     }
   };
 
@@ -52,7 +82,7 @@ export default function AdminHomepage() {
           <p className="text-muted-foreground text-sm">Manage hero section and homepage content blocks.</p>
         </div>
 
-        {sections.map(section => (
+        {(Array.isArray(sections) ? sections : []).map(section => (
           <div key={section.id} className="bg-card rounded-xl border border-border p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-foreground capitalize">{section.section_key.replace(/_/g, ' ')}</h2>
@@ -72,7 +102,9 @@ export default function AdminHomepage() {
               <div><Label>CTA Text</Label><Input value={section.cta_text || ''} onChange={e => handleChange(section.id, 'cta_text', e.target.value)} /></div>
               <div><Label>CTA Link</Label><Input value={section.cta_link || ''} onChange={e => handleChange(section.id, 'cta_link', e.target.value)} /></div>
             </div>
-            <Button onClick={() => handleSave(section)}>Save {section.section_key}</Button>
+            <Button onClick={() => handleSave(section)} disabled={savingId === section.id}>
+              {savingId === section.id ? 'Saving...' : `Save ${section.section_key}`}
+            </Button>
           </div>
         ))}
       </div>

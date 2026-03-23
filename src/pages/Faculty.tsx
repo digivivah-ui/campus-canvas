@@ -14,18 +14,35 @@
    const [isLoading, setIsLoading] = useState(true);
  
    useEffect(() => {
-     Promise.all([getFaculty(), getDepartments()])
-       .then(([facultyData, deptData]) => {
-         setFaculty(facultyData);
-         setDepartments(deptData);
-       })
-       .catch(console.error)
-       .finally(() => setIsLoading(false));
+     let mounted = true;
+     async function load() {
+       try {
+         const [facultyResult, deptResult] = await Promise.all([getFaculty(), getDepartments()]);
+         const facultyData = Array.isArray(facultyResult) ? facultyResult : [];
+         const deptData = Array.isArray(deptResult) ? deptResult : [];
+         if (mounted) {
+           setFaculty(facultyData);
+           setDepartments(deptData);
+         }
+       } catch (err) {
+         console.error('Faculty load error:', err);
+         if (mounted) {
+           setFaculty([]);
+           setDepartments([]);
+         }
+       } finally {
+         if (mounted) setIsLoading(false);
+       }
+     }
+     load();
+     return () => { mounted = false; };
    }, []);
- 
+
+   const safeFaculty = Array.isArray(faculty) ? faculty : [];
+   const safeDepartments = Array.isArray(departments) ? departments : [];
    const filteredFaculty = selectedDept === 'all'
-     ? faculty
-     : faculty.filter((f) => f.department_id === selectedDept);
+     ? safeFaculty
+     : safeFaculty.filter((f) => f.department_id === selectedDept);
  
    return (
      <PublicLayout>
@@ -58,7 +75,7 @@
                </SelectTrigger>
                <SelectContent>
                  <SelectItem value="all">All Departments</SelectItem>
-                 {departments.map((dept) => (
+                 {safeDepartments.map((dept) => (
                    <SelectItem key={dept.id} value={dept.id}>
                      {dept.name}
                    </SelectItem>

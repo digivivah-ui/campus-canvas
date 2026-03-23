@@ -14,17 +14,31 @@ export function useSocialLinks() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from('social_links')
-      .select('*')
-      .eq('is_active', true)
-      .order('order_index')
-      .then(({ data, error }) => {
-        if (!error && data) {
-          setLinks((data as SocialLink[]).filter(l => l.url && l.url.trim() !== ''));
+    let mounted = true;
+    async function load() {
+      try {
+        const { data, error } = await supabase
+          .from('social_links')
+          .select('*')
+          .eq('is_active', true)
+          .order('order_index');
+
+        if (error) {
+          console.error('Supabase error (useSocialLinks):', error);
+          if (mounted) setLinks([]);
+        } else {
+          const arr = Array.isArray(data) ? data : [];
+          if (mounted) setLinks(arr.filter((l: SocialLink) => l.url && l.url.trim() !== ''));
         }
-        setIsLoading(false);
-      });
+      } catch (err) {
+        console.error('useSocialLinks load error:', err);
+        if (mounted) setLinks([]);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
   }, []);
 
   return { links, isLoading };

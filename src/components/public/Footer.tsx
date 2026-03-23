@@ -44,9 +44,9 @@ export function Footer() {
             <p className="text-sm opacity-80 leading-relaxed">{footerText}</p>
 
             {/* Social Links from DB */}
-            {socialLinks.length > 0 && (
+            {(Array.isArray(socialLinks) ? socialLinks : []).length > 0 && (
               <div className="flex gap-3 pt-2">
-                {socialLinks.map((link) => {
+                {(Array.isArray(socialLinks) ? socialLinks : []).map((link) => {
                   const Icon = iconMap[link.icon || ''] || Globe;
                   return (
                     <a

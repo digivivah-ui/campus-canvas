@@ -14,45 +14,75 @@ const iconMap: Record<string, typeof Users> = {
 };
 
 function AnimatedCounter({ value, isVisible }: { value: string; isVisible: boolean }) {
-  const numericMatch = value.match(/^(\d+)/);
-  const suffix = value.replace(/^\d+/, '');
+  const str = value != null ? String(value) : '';
+  const numericMatch = str.match(/^(\d+)/);
+  const suffix = str.replace(/^\d+/, '');
   const target = numericMatch ? parseInt(numericMatch[1], 10) : 0;
-  const [count, setCount] = useState(0);
-  const hasAnimated = useRef(false);
+
+  const [count, setCount] = useState(target);
 
   useEffect(() => {
-    if (!isVisible || hasAnimated.current || !numericMatch) return;
-    hasAnimated.current = true;
-    const duration = 1500;
-    const steps = 40;
-    const increment = target / steps;
-    let current = 0;
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(current));
-      }
-    }, duration / steps);
-    return () => clearInterval(timer);
-  }, [isVisible, target, numericMatch]);
+    if (!numericMatch) return;
 
-  if (!numericMatch) return <span>{value}</span>;
+    // If not visible, just show final number
+    if (!isVisible) {
+      setCount(target);
+      return;
+    }
+
+    let start = 0;
+    const duration = 1500;
+    const startTime = performance.now();
+
+    const animate = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const current = Math.floor(progress * target);
+      setCount(current);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [target, isVisible]);
+
+  if (!numericMatch) return <span>{str || '0'}</span>;
+
   return <span>{count}{suffix}</span>;
 }
 
 export function StatsSection() {
   const [stats, setStats] = useState<Stat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { ref, isVisible } = useScrollReveal<HTMLDivElement>();
+  const { ref, isVisible } = useScrollReveal<HTMLDivElement>(0);
 
   useEffect(() => {
-    getStats()
-      .then(setStats)
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+    let mounted = true;
+    async function load() {
+      try {
+        const result = await getStats();
+        const raw = Array.isArray(result) ? result : [];
+        const data = raw.map((row: Record<string, unknown>) => ({
+          id: String(row?.id ?? ''),
+          label: String(row?.label ?? ''),
+          value: String(row?.value ?? ''),
+          icon: row?.icon != null ? String(row.icon) : null,
+          order_index: Number(row?.order_index) ?? 0,
+          is_active: row?.is_active !== false,
+          created_at: String(row?.created_at ?? ''),
+          updated_at: String(row?.updated_at ?? ''),
+        }));
+        if (mounted) setStats(data as Stat[]);
+      } catch (err) {
+        console.error('StatsSection load error:', err);
+        if (mounted) setStats([]);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
   }, []);
 
   if (isLoading) {
@@ -65,18 +95,33 @@ export function StatsSection() {
     );
   }
 
+  const statsList = Array.isArray(stats) ? stats : [];
+  console.log(statsList);
+  if (statsList.length === 0) {
+    return (
+      <section className="py-20 bg-gradient-to-b from-secondary to-background">
+        <div className="container-college text-center">
+          <p className="text-muted-foreground">No statistics configured. Add stats in Admin → Statistics.</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section ref={ref} className="py-20 bg-gradient-to-b from-secondary to-background">
       <div className="container-college">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-          {stats.map((stat, index) => {
+          {statsList.map((stat, index) => {
             const Icon = iconMap[stat.icon || 'award'] || Award;
             return (
               <motion.div
                 key={stat.id}
                 className="text-center group p-4 md:p-6 rounded-2xl bg-card shadow-sm border border-border/50"
-                initial={{ opacity: 1, y: 0 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 1, y: 50 }}
+                animate={{
+                  opacity: 1,
+                  y: isVisible ? 0 : 50,
+                }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-primary/10 text-primary mb-3 md:mb-4">
