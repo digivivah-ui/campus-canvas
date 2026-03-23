@@ -14,6 +14,7 @@ import {
     Settings,
     BarChart3,
     Globe,
+    Video,
   } from 'lucide-react';
  import { useAuth } from '@/hooks/useAuth';
  import { Button } from '@/components/ui/button';
