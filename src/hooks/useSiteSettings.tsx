@@ -23,29 +23,28 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<SiteSettings>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchSettings = () => {
-    supabase
-      .from('site_settings')
-      .select('setting_key, setting_value')
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Supabase error (useSiteSettings):', error);
-          setSettings({});
-        } else {
-          const arr = Array.isArray(data) ? data : [];
-          const map: SiteSettings = {};
-          arr.forEach((row: { setting_key?: string; setting_value?: string }) => {
-            if (row.setting_key) map[row.setting_key] = row.setting_value || '';
-          });
-          setSettings(map);
-        }
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error('useSiteSettings fetch error:', err);
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('setting_key, setting_value');
+      if (error) {
+        console.error('Supabase error (useSiteSettings):', error);
         setSettings({});
-        setIsLoading(false);
-      });
+      } else {
+        const arr = Array.isArray(data) ? data : [];
+        const map: SiteSettings = {};
+        arr.forEach((row: { setting_key?: string; setting_value?: string }) => {
+          if (row.setting_key) map[row.setting_key] = row.setting_value || '';
+        });
+        setSettings(map);
+      }
+    } catch (err) {
+      console.error('useSiteSettings fetch error:', err);
+      setSettings({});
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
