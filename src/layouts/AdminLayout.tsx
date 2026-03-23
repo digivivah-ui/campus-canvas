@@ -14,6 +14,7 @@ import {
     Settings,
     BarChart3,
     Globe,
+    Video,
   } from 'lucide-react';
  import { useAuth } from '@/hooks/useAuth';
  import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ const navItems = [
   { href: '/admin/events', label: 'Events', icon: Calendar },
   { href: '/admin/gallery', label: 'Gallery', icon: Image },
   { href: '/admin/social-links', label: 'Social Links', icon: Globe },
+  { href: '/admin/explore-videos', label: 'Explore Videos', icon: Video },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
 ];
  

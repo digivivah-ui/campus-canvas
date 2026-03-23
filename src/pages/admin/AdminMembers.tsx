@@ -55,7 +55,7 @@ export default function AdminMembers() {
   const fetchMembers = async () => {
     try {
       const data = await getAllMembers();
-      setMembers(data);
+      setMembers(data as Member[]);
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to fetch members', variant: 'destructive' });
     } finally {

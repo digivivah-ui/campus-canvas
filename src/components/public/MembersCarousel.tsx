@@ -14,7 +14,7 @@ export function MembersCarousel() {
       try {
         const result = await getMembers();
         const data = Array.isArray(result) ? result : [];
-        if (mounted) setMembers(data);
+        if (mounted) setMembers(data as Member[]);
       } catch (err) {
         console.error('MembersCarousel load error:', err);
         if (mounted) setMembers([]);
