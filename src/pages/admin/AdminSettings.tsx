@@ -20,7 +20,6 @@ interface SettingRow {
 
 const categoryConfig: Record<string, { title: string; icon: typeof Settings }> = {
   general: { title: 'General Settings', icon: Settings },
-  hero: { title: 'Hero Section', icon: ImageIcon },
   college_photo: { title: 'College Photo Section', icon: ImageIcon },
   social: { title: 'Social Links', icon: Globe },
   whatsapp: { title: 'WhatsApp Integration', icon: MessageCircle },

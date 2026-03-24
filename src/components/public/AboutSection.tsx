@@ -85,7 +85,7 @@ export function AboutSection() {
                     <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-primary/15 flex items-center justify-center">
                       <Icon className="w-7 h-7 text-primary" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-display text-xl md:text-2xl font-bold text-primary mb-2">
                         {section.title}
                       </h3>
@@ -93,6 +93,14 @@ export function AboutSection() {
                         {section.content}
                       </p>
                     </div>
+                    {section.image_url && (
+                      <img
+                        src={section.image_url}
+                        alt={section.title || 'About section'}
+                        className="hidden sm:block w-32 md:w-44 h-24 md:h-32 rounded-xl object-cover flex-shrink-0 border border-primary/10"
+                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                      />
+                    )}
                   </motion.div>
                 );
               })}
