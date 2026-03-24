@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Eye, History, Heart, BookOpen, Award, Users } from 'lucide-react';
+import { Target, Eye, History, Heart, BookOpen, Award, Users, Landmark } from 'lucide-react';
 import { getAboutSections } from '@/services/api';
 import type { AboutSection as AboutSectionType } from '@/types/database';
 import { Skeleton } from '@/components/common/Skeleton';
+import { ProgramsSection } from '@/components/public/ProgramsSection';
 
 const iconMap: Record<string, typeof Target> = {
   vision: Eye,
@@ -97,7 +98,7 @@ export function AboutSection() {
                       <img
                         src={section.image_url}
                         alt={section.title || 'About section'}
-                        className="hidden sm:block w-32 md:w-44 h-24 md:h-32 rounded-xl object-cover flex-shrink-0 border border-primary/10"
+                        className="w-full sm:w-40 md:w-52 h-40 sm:h-28 md:h-36 rounded-xl object-cover flex-shrink-0 border border-primary/10"
                         onError={(e) => (e.currentTarget.style.display = 'none')}
                       />
                     )}
@@ -109,58 +110,8 @@ export function AboutSection() {
         </div>
       </section>
 
-      {/* Programs & NSS */}
-      <section id="programs" className="py-12 md:py-20 bg-primary/[0.03]">
-        <div className="container-college">
-          <motion.div
-            className="text-center mb-10"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-primary mb-4">
-              Programs & Activities
-            </h2>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Award,
-                title: 'Academic Excellence',
-                desc: 'Comprehensive programs in BA, BCom, BSc (Bio & Maths), MA, and MSc with expert faculty guidance.',
-              },
-              {
-                icon: Users,
-                title: 'NSS – National Service Scheme',
-                desc: 'Active NSS unit fostering social responsibility, community service, and nation-building among students.',
-              },
-              {
-                icon: BookOpen,
-                title: 'University Affiliation',
-                desc: 'Affiliated to Barkatullah University, Bhopal — ensuring recognized, quality education standards.',
-              },
-            ].map((item, index) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="text-center p-6 md:p-8 bg-card rounded-2xl border border-primary/10 shadow-sm"
-              >
-                <div className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto mb-5">
-                  <item.icon className="w-7 h-7 text-primary" />
-                </div>
-                <h3 className="font-display text-lg font-semibold text-primary mb-3">
-                  {item.title}
-                </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Programs & Activities - Dynamic */}
+      <ProgramsSection />
     </>
   );
 }

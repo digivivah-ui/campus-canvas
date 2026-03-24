@@ -295,6 +295,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          mobile_image_url: string | null
           order_index: number | null
           section_key: string
           subtitle: string | null
@@ -309,6 +310,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          mobile_image_url?: string | null
           order_index?: number | null
           section_key: string
           subtitle?: string | null
@@ -323,6 +325,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          mobile_image_url?: string | null
           order_index?: number | null
           section_key?: string
           subtitle?: string | null
@@ -400,6 +403,39 @@ export type Database = {
           id?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      programs_activities: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          order_index: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          order_index?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          order_index?: number
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
