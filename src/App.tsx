@@ -30,6 +30,7 @@ import AdminHomepage from "./pages/admin/AdminHomepage";
 import AdminAbout from "./pages/admin/AdminAbout";
 import AdminSocialLinks from "./pages/admin/AdminSocialLinks";
 import AdminExploreVideos from "./pages/admin/AdminExploreVideos";
+import AdminPrograms from "./pages/admin/AdminPrograms";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 
 const queryClient = new QueryClient();
