@@ -8,6 +8,7 @@ import type { HomepageContent } from '@/types/database';
 import { HeroSkeleton } from '@/components/common/Skeleton';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { withTimeout } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function HeroSection() {
   const [content, setContent] = useState<HomepageContent | null>(null);
