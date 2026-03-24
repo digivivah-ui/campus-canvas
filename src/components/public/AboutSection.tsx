@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Eye, History, Heart, BookOpen, Award, Users } from 'lucide-react';
+import { Target, Eye, History, Heart, BookOpen, Award, Users, Landmark } from 'lucide-react';
 import { getAboutSections } from '@/services/api';
 import type { AboutSection as AboutSectionType } from '@/types/database';
 import { Skeleton } from '@/components/common/Skeleton';
