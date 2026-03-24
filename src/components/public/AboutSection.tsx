@@ -97,7 +97,7 @@ export function AboutSection() {
                       <img
                         src={section.image_url}
                         alt={section.title || 'About section'}
-                        className="hidden sm:block w-32 md:w-44 h-24 md:h-32 rounded-xl object-cover flex-shrink-0 border border-primary/10"
+                        className="w-full sm:w-40 md:w-52 h-40 sm:h-28 md:h-36 rounded-xl object-cover flex-shrink-0 border border-primary/10"
                         onError={(e) => (e.currentTarget.style.display = 'none')}
                       />
                     )}
