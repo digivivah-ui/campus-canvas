@@ -96,8 +96,14 @@ export default function AdminHomepage() {
               <div><Label>Subtitle</Label><Input value={section.subtitle || ''} onChange={e => handleChange(section.id, 'subtitle', e.target.value)} /></div>
             </div>
             <div><Label>Content</Label><Textarea value={section.content || ''} onChange={e => handleChange(section.id, 'content', e.target.value)} rows={3} /></div>
-            <div><Label>Image URL</Label><Input value={section.image_url || ''} onChange={e => handleChange(section.id, 'image_url', e.target.value)} /></div>
+            <div><Label>Image URL (Desktop)</Label><Input value={section.image_url || ''} onChange={e => handleChange(section.id, 'image_url', e.target.value)} /></div>
             {section.image_url && <img src={section.image_url} alt="Preview" className="h-20 rounded-lg border border-border object-cover" onError={e => (e.currentTarget.style.display = 'none')} />}
+            {section.section_key === 'hero' && (
+              <>
+                <div><Label>Image URL (Mobile)</Label><Input value={(section as any).mobile_image_url || ''} onChange={e => handleChange(section.id, 'mobile_image_url', e.target.value)} /></div>
+                {(section as any).mobile_image_url && <img src={(section as any).mobile_image_url} alt="Mobile Preview" className="h-20 rounded-lg border border-border object-cover" onError={e => (e.currentTarget.style.display = 'none')} />}
+              </>
+            )}
             <div className="grid gap-4 md:grid-cols-2">
               <div><Label>CTA Text</Label><Input value={section.cta_text || ''} onChange={e => handleChange(section.id, 'cta_text', e.target.value)} /></div>
               <div><Label>CTA Link</Label><Input value={section.cta_link || ''} onChange={e => handleChange(section.id, 'cta_link', e.target.value)} /></div>
