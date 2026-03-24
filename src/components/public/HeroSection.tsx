@@ -34,9 +34,13 @@ export function HeroSection() {
     return () => { mounted = false; };
   }, []);
 
+  const isMobile = useIsMobile();
+
   if (isLoading) return <HeroSkeleton />;
 
-  const heroImage = content?.image_url || getSetting('hero_image_url');
+  const desktopImage = content?.image_url || getSetting('hero_image_url');
+  const mobileImage = (content as any)?.mobile_image_url || getSetting('hero_mobile_image_url');
+  const heroImage = isMobile && mobileImage ? mobileImage : desktopImage;
   const collegeName = getSetting('college_name', 'Mahatma Gandhi Mahavidhyala Ashta');
   const address = getSetting('address', 'Near Mukharji Ground, Kannod Road, Ashta, Sehore (M.P.)');
 

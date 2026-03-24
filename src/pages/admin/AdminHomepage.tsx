@@ -48,10 +48,11 @@ export default function AdminHomepage() {
           subtitle: section.subtitle,
           content: section.content,
           image_url: section.image_url,
+          mobile_image_url: (section as any).mobile_image_url,
           cta_text: section.cta_text,
           cta_link: section.cta_link,
           is_active: section.is_active,
-        }),
+        } as any),
         10000,
         'Save timed out'
       );
