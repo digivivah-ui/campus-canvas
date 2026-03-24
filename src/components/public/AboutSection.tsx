@@ -4,6 +4,7 @@ import { Target, Eye, History, Heart, BookOpen, Award, Users, Landmark } from 'l
 import { getAboutSections } from '@/services/api';
 import type { AboutSection as AboutSectionType } from '@/types/database';
 import { Skeleton } from '@/components/common/Skeleton';
+import { ProgramsSection } from '@/components/public/ProgramsSection';
 
 const iconMap: Record<string, typeof Target> = {
   vision: Eye,
