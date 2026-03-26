@@ -164,6 +164,33 @@ export type Database = {
         }
         Relationships: []
       }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          id: string
+          title: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          id?: string
+          title: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
       explore_videos: {
         Row: {
           created_at: string
@@ -249,6 +276,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fees_collection: {
+        Row: {
+          amount: number
+          course: string | null
+          created_at: string
+          date: string
+          id: string
+          student_name: string | null
+        }
+        Insert: {
+          amount?: number
+          course?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          student_name?: string | null
+        }
+        Update: {
+          amount?: number
+          course?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          student_name?: string | null
+        }
+        Relationships: []
       }
       gallery: {
         Row: {
@@ -436,6 +490,36 @@ export type Database = {
           order_index?: number
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      salaries: {
+        Row: {
+          created_at: string
+          designation: string | null
+          id: string
+          payment_date: string
+          salary_amount: number
+          staff_name: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          designation?: string | null
+          id?: string
+          payment_date?: string
+          salary_amount?: number
+          staff_name: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          designation?: string | null
+          id?: string
+          payment_date?: string
+          salary_amount?: number
+          staff_name?: string
+          status?: string
         }
         Relationships: []
       }
