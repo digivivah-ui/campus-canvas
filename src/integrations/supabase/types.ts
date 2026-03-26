@@ -622,6 +622,42 @@ export type Database = {
         }
         Relationships: []
       }
+      students: {
+        Row: {
+          admission_date: string
+          course: string
+          created_at: string
+          id: string
+          name: string
+          paid_fees: number
+          semester: number
+          total_fees: number
+          year: number
+        }
+        Insert: {
+          admission_date?: string
+          course: string
+          created_at?: string
+          id?: string
+          name: string
+          paid_fees?: number
+          semester?: number
+          total_fees?: number
+          year?: number
+        }
+        Update: {
+          admission_date?: string
+          course?: string
+          created_at?: string
+          id?: string
+          name?: string
+          paid_fees?: number
+          semester?: number
+          total_fees?: number
+          year?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
