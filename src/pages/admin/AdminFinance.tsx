@@ -193,7 +193,7 @@ function SummaryCard({ title, value, icon, subtitle, variant = 'default' }: { ti
 }
 
 // --- Fees Tab ---
-function FeesTab({ fees }: { fees: Fee[] }) {
+function FeesTab({ fees, courses }: { fees: Fee[]; courses: { id: string; name: string }[] }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
