@@ -235,7 +235,13 @@ function FeesTab({ fees, courses }: { fees: Fee[]; courses: { id: string; name: 
               <div><Label>Amount (₹)*</Label><Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} /></div>
               <div><Label>Date*</Label><Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></div>
               <div><Label>Student Name</Label><Input value={form.student_name} onChange={e => setForm(p => ({ ...p, student_name: e.target.value }))} /></div>
-              <div><Label>Course</Label><Input value={form.course} onChange={e => setForm(p => ({ ...p, course: e.target.value }))} /></div>
+              <div>
+                <Label>Course</Label>
+                <Select value={form.course} onValueChange={v => setForm(p => ({ ...p, course: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
+                  <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
               <Button className="w-full" onClick={() => saveMutation.mutate()} disabled={!form.amount || saveMutation.isPending}>Save</Button>
             </div>
           </DialogContent>
