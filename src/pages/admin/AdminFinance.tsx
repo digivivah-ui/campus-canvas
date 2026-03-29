@@ -16,6 +16,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from 'recharts';
 import { Plus, Pencil, Trash2, IndianRupee, TrendingUp, TrendingDown, Wallet, CircleDollarSign } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO } from 'date-fns';
+import { useCourseStructure } from '@/hooks/useCourseStructure';
 
 // --- Types ---
 type Fee = { id: string; amount: number; date: string; student_name: string | null; course: string | null; created_at: string };
