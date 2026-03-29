@@ -158,7 +158,7 @@ export default function AdminFinance() {
             <TabsTrigger value="pending" className="flex-1 min-w-[100px]">Pending Fees</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="fees"><FeesTab fees={fees} /></TabsContent>
+          <TabsContent value="fees"><FeesTab fees={fees} courses={activeCourses} /></TabsContent>
           <TabsContent value="expenses"><ExpensesTab expenses={expenses} /></TabsContent>
           <TabsContent value="salaries"><SalariesTab salaries={salaries} /></TabsContent>
           <TabsContent value="pending"><PendingFeesTab currentValue={pendingFeesAmount} settingId={pendingFeesSetting?.id} /></TabsContent>
