@@ -119,6 +119,30 @@ export interface UserRole {
   created_at: string;
 }
 
+export interface Course {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Year {
+  id: string;
+  name: string;
+  course_id: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Semester {
+  id: string;
+  name: string;
+  year_id: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface Member {
   id: string;
   name: string;

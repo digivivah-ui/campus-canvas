@@ -80,6 +80,30 @@ export type Database = {
         }
         Relationships: []
       }
+      courses: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           courses: string[] | null
@@ -523,6 +547,38 @@ export type Database = {
         }
         Relationships: []
       }
+      semesters: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          year_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          year_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          year_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "semesters_year_id_fkey"
+            columns: ["year_id"]
+            isOneToOne: false
+            referencedRelation: "years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_settings: {
         Row: {
           category: string
@@ -626,37 +682,68 @@ export type Database = {
         Row: {
           admission_date: string
           course: string
+          course_id: string | null
           created_at: string
           id: string
           name: string
           paid_fees: number
           semester: number
+          semester_id: string | null
           total_fees: number
           year: number
+          year_id: string | null
         }
         Insert: {
           admission_date?: string
           course: string
+          course_id?: string | null
           created_at?: string
           id?: string
           name: string
           paid_fees?: number
           semester?: number
+          semester_id?: string | null
           total_fees?: number
           year?: number
+          year_id?: string | null
         }
         Update: {
           admission_date?: string
           course?: string
+          course_id?: string | null
           created_at?: string
           id?: string
           name?: string
           paid_fees?: number
           semester?: number
+          semester_id?: string | null
           total_fees?: number
           year?: number
+          year_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_semester_id_fkey"
+            columns: ["semester_id"]
+            isOneToOne: false
+            referencedRelation: "semesters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_year_id_fkey"
+            columns: ["year_id"]
+            isOneToOne: false
+            referencedRelation: "years"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -678,6 +765,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      years: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "years_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

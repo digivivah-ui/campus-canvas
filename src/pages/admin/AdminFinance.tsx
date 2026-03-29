@@ -16,6 +16,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from 'recharts';
 import { Plus, Pencil, Trash2, IndianRupee, TrendingUp, TrendingDown, Wallet, CircleDollarSign } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO } from 'date-fns';
+import { useCourseStructure } from '@/hooks/useCourseStructure';
 
 // --- Types ---
 type Fee = { id: string; amount: number; date: string; student_name: string | null; course: string | null; created_at: string };
@@ -28,6 +29,7 @@ export default function AdminFinance() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const now = new Date();
+  const { activeCourses } = useCourseStructure();
 
   // --- Data Queries ---
   const { data: fees = [] } = useQuery<Fee[]>({
@@ -156,7 +158,7 @@ export default function AdminFinance() {
             <TabsTrigger value="pending" className="flex-1 min-w-[100px]">Pending Fees</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="fees"><FeesTab fees={fees} /></TabsContent>
+          <TabsContent value="fees"><FeesTab fees={fees} courses={activeCourses} /></TabsContent>
           <TabsContent value="expenses"><ExpensesTab expenses={expenses} /></TabsContent>
           <TabsContent value="salaries"><SalariesTab salaries={salaries} /></TabsContent>
           <TabsContent value="pending"><PendingFeesTab currentValue={pendingFeesAmount} settingId={pendingFeesSetting?.id} /></TabsContent>
@@ -191,7 +193,7 @@ function SummaryCard({ title, value, icon, subtitle, variant = 'default' }: { ti
 }
 
 // --- Fees Tab ---
-function FeesTab({ fees }: { fees: Fee[] }) {
+function FeesTab({ fees, courses }: { fees: Fee[]; courses: { id: string; name: string }[] }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -233,7 +235,13 @@ function FeesTab({ fees }: { fees: Fee[] }) {
               <div><Label>Amount (₹)*</Label><Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} /></div>
               <div><Label>Date*</Label><Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></div>
               <div><Label>Student Name</Label><Input value={form.student_name} onChange={e => setForm(p => ({ ...p, student_name: e.target.value }))} /></div>
-              <div><Label>Course</Label><Input value={form.course} onChange={e => setForm(p => ({ ...p, course: e.target.value }))} /></div>
+              <div>
+                <Label>Course</Label>
+                <Select value={form.course} onValueChange={v => setForm(p => ({ ...p, course: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
+                  <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
               <Button className="w-full" onClick={() => saveMutation.mutate()} disabled={!form.amount || saveMutation.isPending}>Save</Button>
             </div>
           </DialogContent>

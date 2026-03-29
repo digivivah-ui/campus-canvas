@@ -3,13 +3,20 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Users, GraduationCap, AlertTriangle, TrendingUp } from 'lucide-react';
-import { format, parseISO, startOfMonth } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { useCourseStructure } from '@/hooks/useCourseStructure';
+import { useState, useMemo } from 'react';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', '#6366f1', '#f59e0b', '#10b981', '#ef4444'];
 
 export default function AdminAnalytics() {
+  const { courses, years, getCourseName, getYearName, getSemesterName } = useCourseStructure();
+  const [filterCourse, setFilterCourse] = useState<string>('all');
+  const [filterYear, setFilterYear] = useState<string>('all');
+
   const { data: students = [] } = useQuery({
     queryKey: ['analytics-students'],
     queryFn: async () => {
@@ -28,49 +35,95 @@ export default function AdminAnalytics() {
     },
   });
 
-  // Summary stats
-  const totalStudents = students.length;
-  const totalDefaulters = students.filter((s) => Number(s.total_fees) - Number(s.paid_fees) > 0).length;
-  const totalPending = students.reduce((sum, s) => sum + (Number(s.total_fees) - Number(s.paid_fees)), 0);
+  // Filtered students
+  const filtered = useMemo(() => {
+    let list = students;
+    if (filterCourse !== 'all') {
+      list = list.filter(s => (s.course_id || '') === filterCourse || s.course === filterCourse);
+    }
+    if (filterYear !== 'all') {
+      list = list.filter(s => (s.year_id || '') === filterYear || String(s.year) === filterYear);
+    }
+    return list;
+  }, [students, filterCourse, filterYear]);
+
+  const filteredYears = filterCourse !== 'all' ? years.filter(y => y.course_id === filterCourse) : years;
+
+  const totalStudents = filtered.length;
+  const totalDefaulters = filtered.filter(s => Number(s.total_fees) - Number(s.paid_fees) > 0).length;
+  const totalPending = filtered.reduce((sum, s) => sum + (Number(s.total_fees) - Number(s.paid_fees)), 0);
   const totalCollected = fees.reduce((sum, f) => sum + Number(f.amount), 0);
 
-  // Fees per course (from fees_collection)
-  const feesByCourse: Record<string, number> = {};
-  fees.forEach((f) => {
-    const course = f.course || 'Other';
-    feesByCourse[course] = (feesByCourse[course] || 0) + Number(f.amount);
-  });
-  const feesByCourseData = Object.entries(feesByCourse).map(([name, value]) => ({ name, value }));
+  // Fees per course
+  const feesByCourseData = useMemo(() => {
+    const map: Record<string, number> = {};
+    fees.forEach(f => {
+      const key = f.course || 'Other';
+      map[key] = (map[key] || 0) + Number(f.amount);
+    });
+    return Object.entries(map).map(([name, value]) => ({ name, value }));
+  }, [fees]);
 
-  // Defaulters list
-  const defaulters = students
-    .map((s) => ({ ...s, pending: Number(s.total_fees) - Number(s.paid_fees) }))
-    .filter((s) => s.pending > 0)
-    .sort((a, b) => b.pending - a.pending);
+  // Defaulters
+  const defaulters = useMemo(() =>
+    filtered
+      .map(s => ({ ...s, pending: Number(s.total_fees) - Number(s.paid_fees) }))
+      .filter(s => s.pending > 0)
+      .sort((a, b) => b.pending - a.pending),
+    [filtered]
+  );
 
-  // Monthly admission trends
-  const admissionsByMonth: Record<string, number> = {};
-  students.forEach((s) => {
-    const month = format(parseISO(s.admission_date), 'yyyy-MM');
-    admissionsByMonth[month] = (admissionsByMonth[month] || 0) + 1;
-  });
-  const admissionTrendData = Object.entries(admissionsByMonth)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, count]) => ({ month: format(parseISO(month + '-01'), 'MMM yyyy'), count }));
+  // Monthly admissions
+  const admissionTrendData = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(s => {
+      const month = format(parseISO(s.admission_date), 'yyyy-MM');
+      map[month] = (map[month] || 0) + 1;
+    });
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([month, count]) => ({ month: format(parseISO(month + '-01'), 'MMM yyyy'), count }));
+  }, [filtered]);
 
-  // Student distribution by course
-  const byCourse: Record<string, number> = {};
-  students.forEach((s) => { byCourse[s.course] = (byCourse[s.course] || 0) + 1; });
-  const courseDistData = Object.entries(byCourse).map(([name, value]) => ({ name, value }));
+  // Distribution by course
+  const courseDistData = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(s => {
+      const name = s.course_id ? getCourseName(s.course_id) : s.course;
+      map[name] = (map[name] || 0) + 1;
+    });
+    return Object.entries(map).map(([name, value]) => ({ name, value }));
+  }, [filtered, getCourseName]);
 
-  // Student distribution by year
-  const byYear: Record<string, number> = {};
-  students.forEach((s) => { byYear[`Year ${s.year}`] = (byYear[`Year ${s.year}`] || 0) + 1; });
-  const yearDistData = Object.entries(byYear).map(([name, value]) => ({ name, value }));
+  // Distribution by year
+  const yearDistData = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(s => {
+      const name = s.year_id ? getYearName(s.year_id) : `Year ${s.year}`;
+      map[name] = (map[name] || 0) + 1;
+    });
+    return Object.entries(map).map(([name, value]) => ({ name, value }));
+  }, [filtered, getYearName]);
 
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3">
+          <Select value={filterCourse} onValueChange={v => { setFilterCourse(v); setFilterYear('all'); }}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Courses" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Courses</SelectItem>
+              {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterYear} onValueChange={setFilterYear}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Years" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Years</SelectItem>
+              {filteredYears.map(y => <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <SummaryCard icon={Users} label="Total Students" value={totalStudents} />
@@ -116,7 +169,7 @@ export default function AdminAnalytics() {
           </Card>
         </div>
 
-        {/* Charts Row 2 - Distribution */}
+        {/* Charts Row 2 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader><CardTitle className="text-base">Students by Course</CardTitle></CardHeader>
@@ -170,11 +223,11 @@ export default function AdminAnalytics() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {defaulters.map((s) => (
+                    {defaulters.map(s => (
                       <TableRow key={s.id}>
                         <TableCell className="font-medium">{s.name}</TableCell>
-                        <TableCell>{s.course}</TableCell>
-                        <TableCell>{s.year}</TableCell>
+                        <TableCell>{s.course_id ? getCourseName(s.course_id) : s.course}</TableCell>
+                        <TableCell>{s.year_id ? getYearName(s.year_id) : s.year}</TableCell>
                         <TableCell className="text-right">₹{Number(s.total_fees).toLocaleString('en-IN')}</TableCell>
                         <TableCell className="text-right">₹{Number(s.paid_fees).toLocaleString('en-IN')}</TableCell>
                         <TableCell className="text-right font-semibold text-destructive">₹{s.pending.toLocaleString('en-IN')}</TableCell>
