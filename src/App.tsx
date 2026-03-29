@@ -33,6 +33,7 @@ import AdminExploreVideos from "./pages/admin/AdminExploreVideos";
 import AdminPrograms from "./pages/admin/AdminPrograms";
 import AdminFinance from "./pages/admin/AdminFinance";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminCourseStructure from "./pages/admin/AdminCourseStructure";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 
 const queryClient = new QueryClient();
