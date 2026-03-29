@@ -29,6 +29,7 @@ export default function AdminFinance() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const now = new Date();
+  const { activeCourses } = useCourseStructure();
 
   // --- Data Queries ---
   const { data: fees = [] } = useQuery<Fee[]>({
