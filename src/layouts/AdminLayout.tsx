@@ -18,6 +18,7 @@ import {
     BookOpen,
     IndianRupee,
     PieChart,
+    UserCheck,
   } from 'lucide-react';
  import { useAuth } from '@/hooks/useAuth';
  import { Button } from '@/components/ui/button';
