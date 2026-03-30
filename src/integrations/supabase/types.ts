@@ -308,6 +308,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          student_id: string | null
           student_name: string | null
         }
         Insert: {
@@ -316,6 +317,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          student_id?: string | null
           student_name?: string | null
         }
         Update: {
@@ -324,9 +326,18 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          student_id?: string | null
           student_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fees_collection_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gallery: {
         Row: {
@@ -680,44 +691,71 @@ export type Database = {
       }
       students: {
         Row: {
+          address: string | null
           admission_date: string
+          admission_number: string | null
+          admission_status: string
           course: string
           course_id: string | null
           created_at: string
+          date_of_birth: string | null
+          email: string | null
+          full_name: string | null
+          gender: string | null
           id: string
           name: string
           paid_fees: number
+          phone: string | null
           semester: number
           semester_id: string | null
           total_fees: number
+          updated_at: string
           year: number
           year_id: string | null
         }
         Insert: {
+          address?: string | null
           admission_date?: string
+          admission_number?: string | null
+          admission_status?: string
           course: string
           course_id?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string | null
+          gender?: string | null
           id?: string
           name: string
           paid_fees?: number
+          phone?: string | null
           semester?: number
           semester_id?: string | null
           total_fees?: number
+          updated_at?: string
           year?: number
           year_id?: string | null
         }
         Update: {
+          address?: string | null
           admission_date?: string
+          admission_number?: string | null
+          admission_status?: string
           course?: string
           course_id?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string | null
+          gender?: string | null
           id?: string
           name?: string
           paid_fees?: number
+          phone?: string | null
           semester?: number
           semester_id?: string | null
           total_fees?: number
+          updated_at?: string
           year?: number
           year_id?: string | null
         }
@@ -803,6 +841,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_admission_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
