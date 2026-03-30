@@ -45,7 +45,7 @@ const navItems = [
   { href: '/admin/explore-videos', label: 'Explore Videos', icon: Video },
   { href: '/admin/programs', label: 'Programs', icon: BookOpen },
   { href: '/admin/course-structure', label: 'Course Structure', icon: GraduationCap },
-  { href: '/admin/students', label: 'Students', icon: GraduationCap },
+  { href: '/admin/students', label: 'Students', icon: UserCheck },
   { href: '/admin/finance', label: 'Finance', icon: IndianRupee },
   { href: '/admin/analytics', label: 'Analytics', icon: PieChart },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
