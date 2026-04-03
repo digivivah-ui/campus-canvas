@@ -14,9 +14,48 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from 'recharts';
-import { Plus, Pencil, Trash2, IndianRupee, TrendingUp, TrendingDown, Wallet, CircleDollarSign } from 'lucide-react';
+import { Plus, Pencil, Trash2, IndianRupee, TrendingUp, TrendingDown, Wallet, CircleDollarSign, Search, ArrowUpDown, ArrowUp, ArrowDown, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO } from 'date-fns';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
+
+const PAGE_SIZE = 10;
+
+function usePagination<T>(items: T[], pageSize = PAGE_SIZE) {
+  const [page, setPage] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const safeP = Math.min(page, totalPages - 1);
+  const paged = items.slice(safeP * pageSize, (safeP + 1) * pageSize);
+  return { page: safeP, setPage, totalPages, paged, total: items.length };
+}
+
+function PaginationControls({ page, totalPages, setPage, total }: { page: number; totalPages: number; setPage: (p: number) => void; total: number }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between pt-4 flex-wrap gap-2">
+      <p className="text-sm text-muted-foreground">{total} record{total !== 1 ? 's' : ''}</p>
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="icon" className="h-8 w-8" disabled={page === 0} onClick={() => setPage(page - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+        {Array.from({ length: totalPages }, (_, i) => (
+          <Button key={i} variant={i === page ? 'default' : 'outline'} size="icon" className="h-8 w-8 text-xs" onClick={() => setPage(i)}>{i + 1}</Button>
+        )).slice(Math.max(0, page - 2), page + 3)}
+        <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}><ChevronRight className="h-4 w-4" /></Button>
+      </div>
+    </div>
+  );
+}
+
+function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
+  if (!active) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+  return dir === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
+}
+
+function SortableHead({ children, sortKey, currentKey, dir, onSort }: { children: React.ReactNode; sortKey: string; currentKey: string; dir: 'asc' | 'desc'; onSort: (k: string) => void; className?: string }) {
+  return (
+    <TableHead className="cursor-pointer select-none whitespace-nowrap" onClick={() => onSort(sortKey)}>
+      <span className="inline-flex items-center">{children}<SortIcon active={currentKey === sortKey} dir={dir} /></span>
+    </TableHead>
+  );
+}
 
 // --- Types ---
 type Fee = { id: string; amount: number; date: string; student_name: string | null; course: string | null; created_at: string };
