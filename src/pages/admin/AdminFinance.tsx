@@ -238,33 +238,51 @@ function FeesTab({ fees, courses }: { fees: Fee[]; courses: { id: string; name: 
   const [open, setOpen] = useState(false);
   const [editItem, setEditItem] = useState<Fee | null>(null);
   const [form, setForm] = useState({ amount: '', date: new Date().toISOString().split('T')[0], student_name: '', course: '' });
+  const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [sortKey, setSortKey] = useState('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const toggleSort = (k: string) => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('desc'); } };
+
+  const filtered = useMemo(() => {
+    let d = [...fees];
+    const q = search.toLowerCase();
+    if (q) d = d.filter(f => (f.student_name || '').toLowerCase().includes(q) || (f.course || '').toLowerCase().includes(q));
+    if (dateFrom) d = d.filter(f => f.date >= dateFrom);
+    if (dateTo) d = d.filter(f => f.date <= dateTo);
+    d.sort((a, b) => {
+      const va = sortKey === 'amount' ? Number(a.amount) : a.date;
+      const vb = sortKey === 'amount' ? Number(b.amount) : b.date;
+      return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+    return d;
+  }, [fees, search, dateFrom, dateTo, sortKey, sortDir]);
+
+  const { page, setPage, totalPages, paged, total } = usePagination(filtered);
+  const hasFilters = search || dateFrom || dateTo;
+  const clearFilters = () => { setSearch(''); setDateFrom(''); setDateTo(''); };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = { amount: Number(form.amount), date: form.date, student_name: form.student_name || null, course: form.course || null };
-      if (editItem) {
-        const { error } = await supabase.from('fees_collection').update(payload).eq('id', editItem.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('fees_collection').insert(payload);
-        if (error) throw error;
-      }
+      if (editItem) { const { error } = await supabase.from('fees_collection').update(payload).eq('id', editItem.id); if (error) throw error; }
+      else { const { error } = await supabase.from('fees_collection').insert(payload); if (error) throw error; }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['fees_collection'] }); setOpen(false); setEditItem(null); toast({ title: 'Saved' }); },
     onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
-
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from('fees_collection').delete().eq('id', id); if (error) throw error; },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['fees_collection'] }); toast({ title: 'Deleted' }); },
   });
-
   const openAdd = () => { setEditItem(null); setForm({ amount: '', date: new Date().toISOString().split('T')[0], student_name: '', course: '' }); setOpen(true); };
   const openEdit = (f: Fee) => { setEditItem(f); setForm({ amount: String(f.amount), date: f.date, student_name: f.student_name ?? '', course: f.course ?? '' }); setOpen(true); };
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
         <CardTitle className="text-base">Fees Collection</CardTitle>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Fee</Button></DialogTrigger>
@@ -286,25 +304,45 @@ function FeesTab({ fees, courses }: { fees: Fee[]; courses: { id: string; name: 
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent className="overflow-x-auto">
-        <Table>
-          <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Student</TableHead><TableHead>Course</TableHead><TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-          <TableBody>
-            {fees.map(f => (
-              <TableRow key={f.id}>
-                <TableCell>{f.date}</TableCell>
-                <TableCell>{f.student_name || '-'}</TableCell>
-                <TableCell>{f.course || '-'}</TableCell>
-                <TableCell className="text-right">₹{Number(f.amount).toLocaleString('en-IN')}</TableCell>
-                <TableCell className="text-right space-x-1">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </TableCell>
+      <CardContent>
+        <div className="flex flex-wrap gap-2 mb-4">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search student or course..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
+          </div>
+          <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="w-auto" placeholder="From" />
+          <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="w-auto" placeholder="To" />
+          {hasFilters && <Button variant="ghost" size="icon" onClick={clearFilters}><X className="h-4 w-4" /></Button>}
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortableHead sortKey="date" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Date</SortableHead>
+                <TableHead>Student</TableHead>
+                <TableHead>Course</TableHead>
+                <SortableHead sortKey="amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Amount</SortableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-            {fees.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No fee records yet</TableCell></TableRow>}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paged.map(f => (
+                <TableRow key={f.id}>
+                  <TableCell>{f.date}</TableCell>
+                  <TableCell>{f.student_name || '-'}</TableCell>
+                  <TableCell>{f.course || '-'}</TableCell>
+                  <TableCell>₹{Number(f.amount).toLocaleString('en-IN')}</TableCell>
+                  <TableCell className="text-right space-x-1">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {paged.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No fee records found</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
+        <PaginationControls page={page} totalPages={totalPages} setPage={setPage} total={total} />
       </CardContent>
     </Card>
   );
@@ -317,33 +355,53 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
   const [open, setOpen] = useState(false);
   const [editItem, setEditItem] = useState<Expense | null>(null);
   const [form, setForm] = useState({ title: '', amount: '', date: new Date().toISOString().split('T')[0], category: 'General' });
+  const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [sortKey, setSortKey] = useState('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const toggleSort = (k: string) => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('desc'); } };
+
+  const filtered = useMemo(() => {
+    let d = [...expenses];
+    const q = search.toLowerCase();
+    if (q) d = d.filter(e => e.title.toLowerCase().includes(q) || e.category.toLowerCase().includes(q));
+    if (catFilter !== 'all') d = d.filter(e => e.category === catFilter);
+    if (dateFrom) d = d.filter(e => e.date >= dateFrom);
+    if (dateTo) d = d.filter(e => e.date <= dateTo);
+    d.sort((a, b) => {
+      const va = sortKey === 'amount' ? Number(a.amount) : a.date;
+      const vb = sortKey === 'amount' ? Number(b.amount) : b.date;
+      return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+    return d;
+  }, [expenses, search, catFilter, dateFrom, dateTo, sortKey, sortDir]);
+
+  const { page, setPage, totalPages, paged, total } = usePagination(filtered);
+  const hasFilters = search || catFilter !== 'all' || dateFrom || dateTo;
+  const clearFilters = () => { setSearch(''); setCatFilter('all'); setDateFrom(''); setDateTo(''); };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = { title: form.title, amount: Number(form.amount), date: form.date, category: form.category };
-      if (editItem) {
-        const { error } = await supabase.from('expenses').update(payload).eq('id', editItem.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('expenses').insert(payload);
-        if (error) throw error;
-      }
+      if (editItem) { const { error } = await supabase.from('expenses').update(payload).eq('id', editItem.id); if (error) throw error; }
+      else { const { error } = await supabase.from('expenses').insert(payload); if (error) throw error; }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); setOpen(false); setEditItem(null); toast({ title: 'Saved' }); },
     onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
-
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from('expenses').delete().eq('id', id); if (error) throw error; },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); toast({ title: 'Deleted' }); },
   });
-
   const openAdd = () => { setEditItem(null); setForm({ title: '', amount: '', date: new Date().toISOString().split('T')[0], category: 'General' }); setOpen(true); };
   const openEdit = (e: Expense) => { setEditItem(e); setForm({ title: e.title, amount: String(e.amount), date: e.date, category: e.category }); setOpen(true); };
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
         <CardTitle className="text-base">Expenses</CardTitle>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Expense</Button></DialogTrigger>
@@ -365,25 +423,52 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent className="overflow-x-auto">
-        <Table>
-          <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Title</TableHead><TableHead>Category</TableHead><TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-          <TableBody>
-            {expenses.map(e => (
-              <TableRow key={e.id}>
-                <TableCell>{e.date}</TableCell>
-                <TableCell>{e.title}</TableCell>
-                <TableCell><Badge variant="secondary">{e.category}</Badge></TableCell>
-                <TableCell className="text-right">₹{Number(e.amount).toLocaleString('en-IN')}</TableCell>
-                <TableCell className="text-right space-x-1">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(e)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(e.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </TableCell>
+      <CardContent>
+        <div className="flex flex-wrap gap-2 mb-4">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search title or category..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
+          </div>
+          <Select value={catFilter} onValueChange={v => { setCatFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Category" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="w-auto" />
+          <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="w-auto" />
+          {hasFilters && <Button variant="ghost" size="icon" onClick={clearFilters}><X className="h-4 w-4" /></Button>}
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortableHead sortKey="date" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Date</SortableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Category</TableHead>
+                <SortableHead sortKey="amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Amount</SortableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-            {expenses.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No expenses yet</TableCell></TableRow>}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paged.map(e => (
+                <TableRow key={e.id}>
+                  <TableCell>{e.date}</TableCell>
+                  <TableCell>{e.title}</TableCell>
+                  <TableCell><Badge variant="secondary">{e.category}</Badge></TableCell>
+                  <TableCell>₹{Number(e.amount).toLocaleString('en-IN')}</TableCell>
+                  <TableCell className="text-right space-x-1">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(e)}><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(e.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {paged.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No expenses found</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
+        <PaginationControls page={page} totalPages={totalPages} setPage={setPage} total={total} />
       </CardContent>
     </Card>
   );
@@ -396,41 +481,53 @@ function SalariesTab({ salaries }: { salaries: Salary[] }) {
   const [open, setOpen] = useState(false);
   const [editItem, setEditItem] = useState<Salary | null>(null);
   const [form, setForm] = useState({ staff_name: '', designation: '', salary_amount: '', payment_date: new Date().toISOString().split('T')[0], status: 'unpaid' });
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortKey, setSortKey] = useState('payment_date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const toggleSort = (k: string) => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('desc'); } };
+
+  const filtered = useMemo(() => {
+    let d = [...salaries];
+    const q = search.toLowerCase();
+    if (q) d = d.filter(s => s.staff_name.toLowerCase().includes(q) || (s.designation || '').toLowerCase().includes(q));
+    if (statusFilter !== 'all') d = d.filter(s => s.status === statusFilter);
+    d.sort((a, b) => {
+      const va = sortKey === 'salary_amount' ? Number(a.salary_amount) : a.payment_date;
+      const vb = sortKey === 'salary_amount' ? Number(b.salary_amount) : b.payment_date;
+      return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+    return d;
+  }, [salaries, search, statusFilter, sortKey, sortDir]);
+
+  const { page, setPage, totalPages, paged, total } = usePagination(filtered);
+  const hasFilters = search || statusFilter !== 'all';
+  const clearFilters = () => { setSearch(''); setStatusFilter('all'); };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = { staff_name: form.staff_name, designation: form.designation || null, salary_amount: Number(form.salary_amount), payment_date: form.payment_date, status: form.status };
-      if (editItem) {
-        const { error } = await supabase.from('salaries').update(payload).eq('id', editItem.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('salaries').insert(payload);
-        if (error) throw error;
-      }
+      if (editItem) { const { error } = await supabase.from('salaries').update(payload).eq('id', editItem.id); if (error) throw error; }
+      else { const { error } = await supabase.from('salaries').insert(payload); if (error) throw error; }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['salaries'] }); setOpen(false); setEditItem(null); toast({ title: 'Saved' }); },
     onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
-
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from('salaries').delete().eq('id', id); if (error) throw error; },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['salaries'] }); toast({ title: 'Deleted' }); },
   });
-
   const toggleStatus = useMutation({
-    mutationFn: async (s: Salary) => {
-      const { error } = await supabase.from('salaries').update({ status: s.status === 'paid' ? 'unpaid' : 'paid' }).eq('id', s.id);
-      if (error) throw error;
-    },
+    mutationFn: async (s: Salary) => { const { error } = await supabase.from('salaries').update({ status: s.status === 'paid' ? 'unpaid' : 'paid' }).eq('id', s.id); if (error) throw error; },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['salaries'] }); toast({ title: 'Updated' }); },
   });
-
   const openAdd = () => { setEditItem(null); setForm({ staff_name: '', designation: '', salary_amount: '', payment_date: new Date().toISOString().split('T')[0], status: 'unpaid' }); setOpen(true); };
   const openEdit = (s: Salary) => { setEditItem(s); setForm({ staff_name: s.staff_name, designation: s.designation ?? '', salary_amount: String(s.salary_amount), payment_date: s.payment_date, status: s.status }); setOpen(true); };
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
         <CardTitle className="text-base">Staff Salaries</CardTitle>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Salary</Button></DialogTrigger>
@@ -456,34 +553,55 @@ function SalariesTab({ salaries }: { salaries: Salary[] }) {
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent className="overflow-x-auto">
-        <Table>
-          <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Staff</TableHead><TableHead>Designation</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-          <TableBody>
-            {salaries.map(s => (
-              <TableRow key={s.id}>
-                <TableCell>{s.payment_date}</TableCell>
-                <TableCell>{s.staff_name}</TableCell>
-                <TableCell>{s.designation || '-'}</TableCell>
-                <TableCell className="text-right">₹{Number(s.salary_amount).toLocaleString('en-IN')}</TableCell>
-                <TableCell>
-                  <Badge
-                    className="cursor-pointer"
-                    variant={s.status === 'paid' ? 'default' : 'destructive'}
-                    onClick={() => toggleStatus.mutate(s)}
-                  >
-                    {s.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right space-x-1">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </TableCell>
+      <CardContent>
+        <div className="flex flex-wrap gap-2 mb-4">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search staff or designation..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
+          </div>
+          <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
+            <SelectTrigger className="w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
+              <SelectItem value="unpaid">Unpaid</SelectItem>
+            </SelectContent>
+          </Select>
+          {hasFilters && <Button variant="ghost" size="icon" onClick={clearFilters}><X className="h-4 w-4" /></Button>}
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortableHead sortKey="payment_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Date</SortableHead>
+                <TableHead>Staff</TableHead>
+                <TableHead>Designation</TableHead>
+                <SortableHead sortKey="salary_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Amount</SortableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-            {salaries.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No salary records yet</TableCell></TableRow>}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paged.map(s => (
+                <TableRow key={s.id}>
+                  <TableCell>{s.payment_date}</TableCell>
+                  <TableCell>{s.staff_name}</TableCell>
+                  <TableCell>{s.designation || '-'}</TableCell>
+                  <TableCell>₹{Number(s.salary_amount).toLocaleString('en-IN')}</TableCell>
+                  <TableCell>
+                    <Badge className="cursor-pointer" variant={s.status === 'paid' ? 'default' : 'destructive'} onClick={() => toggleStatus.mutate(s)}>{s.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right space-x-1">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {paged.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No salary records found</TableCell></TableRow>}
+            </TableBody>
+          </Table>
+        </div>
+        <PaginationControls page={page} totalPages={totalPages} setPage={setPage} total={total} />
       </CardContent>
     </Card>
   );
