@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -14,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
-import { Plus, Pencil, Search, Eye, Users, GraduationCap, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Search, Eye, Users, GraduationCap, UserPlus, ChevronLeft, ChevronRight, BookOpen, Calendar, Layers, ArrowLeft, X } from 'lucide-react';
 
 type Student = {
   id: string;
@@ -58,12 +57,21 @@ const emptyForm = {
   admission_status: 'active',
 };
 
+type FilterContext = {
+  type: 'course' | 'year' | 'semester';
+  id: string;
+  label: string;
+} | null;
+
 export default function AdminStudents() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const { activeCourses, getYearsForCourse, getSemestersForYear, getCourseName, getYearName, getSemesterName } = useCourseStructure();
+  const { courses, years, semesters, activeCourses, getYearsForCourse, getSemestersForYear, getCourseName, getYearName, getSemesterName } = useCourseStructure();
 
-  const [activeTab, setActiveTab] = useState('list');
+  // View state: 'dashboard' or 'list'
+  const [view, setView] = useState<'dashboard' | 'list'>('dashboard');
+  const [activeFilter, setActiveFilter] = useState<FilterContext>(null);
+
   const [search, setSearch] = useState('');
   const [filterCourse, setFilterCourse] = useState('all');
   const [filterYear, setFilterYear] = useState('all');
@@ -100,9 +108,36 @@ export default function AdminStudents() {
     },
   });
 
-  // Filtered & searched
+  // Analytics computations
+  const analytics = useMemo(() => {
+    const total = students.length;
+    const active = students.filter(s => s.admission_status === 'active').length;
+    const totalPending = students.reduce((sum, s) => sum + Math.max(0, Number(s.total_fees) - Number(s.paid_fees)), 0);
+
+    const byCourse: Record<string, number> = {};
+    const byYear: Record<string, number> = {};
+    const bySemester: Record<string, number> = {};
+
+    students.forEach(s => {
+      if (s.course_id) byCourse[s.course_id] = (byCourse[s.course_id] || 0) + 1;
+      if (s.year_id) byYear[s.year_id] = (byYear[s.year_id] || 0) + 1;
+      if (s.semester_id) bySemester[s.semester_id] = (bySemester[s.semester_id] || 0) + 1;
+    });
+
+    return { total, active, totalPending, byCourse, byYear, bySemester };
+  }, [students]);
+
+  // Filtered list
   const filtered = useMemo(() => {
     let list = students;
+
+    // Apply active filter from card click
+    if (activeFilter) {
+      if (activeFilter.type === 'course') list = list.filter(s => s.course_id === activeFilter.id);
+      if (activeFilter.type === 'year') list = list.filter(s => s.year_id === activeFilter.id);
+      if (activeFilter.type === 'semester') list = list.filter(s => s.semester_id === activeFilter.id);
+    }
+
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(s => (s.full_name || s.name || '').toLowerCase().includes(q) || (s.phone || '').includes(q) || (s.admission_number || '').toLowerCase().includes(q));
@@ -112,7 +147,7 @@ export default function AdminStudents() {
     if (filterSemester !== 'all') list = list.filter(s => s.semester_id === filterSemester);
     if (filterStatus !== 'all') list = list.filter(s => s.admission_status === filterStatus);
     return list;
-  }, [students, search, filterCourse, filterYear, filterSemester, filterStatus]);
+  }, [students, search, filterCourse, filterYear, filterSemester, filterStatus, activeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -121,9 +156,39 @@ export default function AdminStudents() {
   const filterYears = filterCourse !== 'all' ? getYearsForCourse(filterCourse) : [];
   const filterSemesters = filterYear !== 'all' ? getSemestersForYear(filterYear) : [];
 
-  // Cascading dropdowns for form
-  const formYears = form.course_id ? getYearsForCourse(form.course_id) : [];
-  const formSemesters = form.year_id ? getSemestersForYear(form.year_id) : [];
+  // Card click handler
+  const handleCardClick = (type: 'course' | 'year' | 'semester', id: string, label: string) => {
+    setActiveFilter({ type, id, label });
+    setSearch('');
+    setFilterCourse('all');
+    setFilterYear('all');
+    setFilterSemester('all');
+    setFilterStatus('all');
+    setPage(1);
+    setView('list');
+  };
+
+  const handleShowAllStudents = () => {
+    setActiveFilter(null);
+    setSearch('');
+    setFilterCourse('all');
+    setFilterYear('all');
+    setFilterSemester('all');
+    setFilterStatus('all');
+    setPage(1);
+    setView('list');
+  };
+
+  const handleBackToDashboard = () => {
+    setView('dashboard');
+    setActiveFilter(null);
+    setSearch('');
+    setFilterCourse('all');
+    setFilterYear('all');
+    setFilterSemester('all');
+    setFilterStatus('all');
+    setPage(1);
+  };
 
   // Generate admission number
   const generateAdmissionNumber = async (): Promise<string> => {
@@ -190,7 +255,6 @@ export default function AdminStudents() {
       setEditStudent(null);
       setForm(emptyForm);
       toast({ title: editStudent ? 'Student updated' : 'Student admitted successfully' });
-      if (!editStudent) setActiveTab('list');
     },
     onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
@@ -231,46 +295,169 @@ export default function AdminStudents() {
     setFormOpen(true);
   };
 
-  const totalStudents = students.length;
-  const activeStudents = students.filter(s => s.admission_status === 'active').length;
-  const totalPending = students.reduce((sum, s) => sum + Math.max(0, Number(s.total_fees) - Number(s.paid_fees)), 0);
-
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="p-3 rounded-lg bg-primary/10 text-primary"><Users className="h-5 w-5" /></div>
-              <div><p className="text-sm text-muted-foreground">Total Students</p><p className="text-xl font-bold">{totalStudents}</p></div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="p-3 rounded-lg bg-green-100 text-green-600"><GraduationCap className="h-5 w-5" /></div>
-              <div><p className="text-sm text-muted-foreground">Active Students</p><p className="text-xl font-bold">{activeStudents}</p></div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="p-3 rounded-lg bg-destructive/10 text-destructive"><UserPlus className="h-5 w-5" /></div>
-              <div><p className="text-sm text-muted-foreground">Pending Fees</p><p className="text-xl font-bold">₹{totalPending.toLocaleString('en-IN')}</p></div>
-            </CardContent>
-          </Card>
+        {/* Page Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {view === 'list' && (
+              <Button variant="ghost" size="icon" onClick={handleBackToDashboard}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Students</h1>
+              <p className="text-sm text-muted-foreground">
+                {view === 'dashboard' ? 'Overview & analytics' : activeFilter ? `Showing: ${activeFilter.label}` : 'All students'}
+              </p>
+            </div>
+          </div>
+          <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" />New Admission</Button>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <TabsList>
-              <TabsTrigger value="list">All Students</TabsTrigger>
-              <TabsTrigger value="add">Add Student</TabsTrigger>
-            </TabsList>
-            <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" />New Admission</Button>
-          </div>
+        {/* DASHBOARD VIEW */}
+        {view === 'dashboard' && (
+          <div className="space-y-6">
+            {/* Top Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20" onClick={handleShowAllStudents}>
+                <CardContent className="flex items-center gap-4 p-5">
+                  <div className="p-3 rounded-xl bg-primary/10 text-primary"><Users className="h-6 w-6" /></div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Students</p>
+                    <p className="text-2xl font-bold">{analytics.total}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="flex items-center gap-4 p-5">
+                  <div className="p-3 rounded-xl bg-green-500/10 text-green-600"><GraduationCap className="h-6 w-6" /></div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active</p>
+                    <p className="text-2xl font-bold">{analytics.active}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="flex items-center gap-4 p-5">
+                  <div className="p-3 rounded-xl bg-orange-500/10 text-orange-600"><UserPlus className="h-6 w-6" /></div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Inactive</p>
+                    <p className="text-2xl font-bold">{analytics.total - analytics.active}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="flex items-center gap-4 p-5">
+                  <div className="p-3 rounded-xl bg-destructive/10 text-destructive"><Layers className="h-6 w-6" /></div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pending Fees</p>
+                    <p className="text-2xl font-bold">₹{analytics.totalPending.toLocaleString('en-IN')}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-          {/* LIST TAB */}
-          <TabsContent value="list" className="space-y-4">
+            {/* Course-wise breakdown */}
+            <div>
+              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary" /> Course-wise Distribution
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {courses.filter(c => c.is_active).map(c => (
+                  <Card
+                    key={c.id}
+                    className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all"
+                    onClick={() => handleCardClick('course', c.id, c.name)}
+                  >
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-sm">{c.name}</p>
+                        <p className="text-xs text-muted-foreground">Click to view students</p>
+                      </div>
+                      <div className="text-2xl font-bold text-primary">{analytics.byCourse[c.id] || 0}</div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {courses.filter(c => c.is_active).length === 0 && (
+                  <p className="text-sm text-muted-foreground col-span-full">No courses configured yet.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Year-wise breakdown */}
+            <div>
+              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" /> Year-wise Distribution
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {years.filter(y => y.is_active).map(y => (
+                  <Card
+                    key={y.id}
+                    className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all"
+                    onClick={() => handleCardClick('year', y.id, `${y.name} (${getCourseName(y.course_id)})`)}
+                  >
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-sm">{y.name}</p>
+                        <p className="text-xs text-muted-foreground">{getCourseName(y.course_id)}</p>
+                      </div>
+                      <div className="text-2xl font-bold text-primary">{analytics.byYear[y.id] || 0}</div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Semester-wise breakdown */}
+            <div>
+              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <Layers className="h-5 w-5 text-primary" /> Semester-wise Distribution
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {semesters.filter(s => s.is_active).map(s => {
+                  const yr = years.find(y => y.id === s.year_id);
+                  return (
+                    <Card
+                      key={s.id}
+                      className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all"
+                      onClick={() => handleCardClick('semester', s.id, `${s.name} – ${yr ? `${getCourseName(yr.course_id)} / ${yr.name}` : ''}`)}
+                    >
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-sm">{s.name}</p>
+                          <p className="text-xs text-muted-foreground">{yr ? `${getCourseName(yr.course_id)} · ${yr.name}` : ''}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-primary">{analytics.bySemester[s.id] || 0}</div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* LIST VIEW */}
+        {view === 'list' && (
+          <div className="space-y-4">
+            {/* Active filter badge */}
+            {activeFilter && (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-sm px-3 py-1 gap-1">
+                  {activeFilter.type === 'course' && <BookOpen className="h-3 w-3" />}
+                  {activeFilter.type === 'year' && <Calendar className="h-3 w-3" />}
+                  {activeFilter.type === 'semester' && <Layers className="h-3 w-3" />}
+                  {activeFilter.label}
+                  <button onClick={() => { setActiveFilter(null); setPage(1); }} className="ml-1 hover:text-foreground">
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+                <span className="text-sm text-muted-foreground">{filtered.length} students</span>
+              </div>
+            )}
+
             {/* Filters */}
             <div className="flex flex-wrap gap-3">
               <div className="relative flex-1 min-w-[200px]">
@@ -373,27 +560,8 @@ export default function AdminStudents() {
                 </div>
               </div>
             )}
-          </TabsContent>
-
-          {/* ADD TAB (inline form) */}
-          <TabsContent value="add">
-            <Card>
-              <CardHeader><CardTitle>New Admission</CardTitle></CardHeader>
-              <CardContent>
-                <StudentForm
-                  form={form}
-                  setForm={setForm}
-                  courses={activeCourses}
-                  formYears={form.course_id ? getYearsForCourse(form.course_id) : []}
-                  formSemesters={form.year_id ? getSemestersForYear(form.year_id) : []}
-                  onSubmit={() => saveMutation.mutate()}
-                  isPending={saveMutation.isPending}
-                  isEdit={false}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
 
         {/* Edit Dialog */}
         <Dialog open={formOpen} onOpenChange={v => { if (!v) { setFormOpen(false); setEditStudent(null); } }}>
@@ -447,7 +615,6 @@ function StudentForm({
 }) {
   return (
     <div className="space-y-6">
-      {/* Personal Info */}
       <div>
         <h3 className="font-semibold text-sm text-muted-foreground mb-3">Personal Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -470,7 +637,6 @@ function StudentForm({
         </div>
       </div>
 
-      {/* Academic Info */}
       <div>
         <h3 className="font-semibold text-sm text-muted-foreground mb-3">Academic Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -498,7 +664,6 @@ function StudentForm({
         </div>
       </div>
 
-      {/* Admission & Fee Info */}
       <div>
         <h3 className="font-semibold text-sm text-muted-foreground mb-3">Admission & Fees</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -541,7 +706,6 @@ function StudentProfile({
 
   return (
     <div className="space-y-6">
-      {/* Personal */}
       <div>
         <h3 className="font-semibold text-sm text-muted-foreground mb-2">Personal Information</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -554,7 +718,6 @@ function StudentProfile({
         </div>
       </div>
 
-      {/* Academic */}
       <div>
         <h3 className="font-semibold text-sm text-muted-foreground mb-2">Academic Information</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -565,7 +728,6 @@ function StudentProfile({
         </div>
       </div>
 
-      {/* Admission */}
       <div>
         <h3 className="font-semibold text-sm text-muted-foreground mb-2">Admission Details</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -574,7 +736,6 @@ function StudentProfile({
         </div>
       </div>
 
-      {/* Fees */}
       <div>
         <h3 className="font-semibold text-sm text-muted-foreground mb-2">Fee Information</h3>
         <div className="grid grid-cols-3 gap-4">
@@ -584,7 +745,6 @@ function StudentProfile({
         </div>
       </div>
 
-      {/* Fee Transactions */}
       {fees.length > 0 && (
         <div>
           <h3 className="font-semibold text-sm text-muted-foreground mb-2">Fee Transactions</h3>
