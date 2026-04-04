@@ -13,12 +13,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from 'recharts';
-import { Plus, Pencil, Trash2, IndianRupee, TrendingUp, TrendingDown, Wallet, CircleDollarSign, Search, ArrowUpDown, ArrowUp, ArrowDown, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { Plus, Pencil, Trash2, IndianRupee, TrendingUp, TrendingDown, Wallet, CircleDollarSign, Search, ArrowUpDown, ArrowUp, ArrowDown, X, ChevronLeft, ChevronRight, Users, AlertTriangle, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
 
 const PAGE_SIZE = 10;
+const PIE_COLORS = ['hsl(var(--primary))', 'hsl(0 84% 60%)', 'hsl(45 93% 47%)', 'hsl(142 76% 36%)', 'hsl(271 91% 65%)', 'hsl(199 89% 48%)', 'hsl(25 95% 53%)'];
 
 function usePagination<T>(items: T[], pageSize = PAGE_SIZE) {
   const [page, setPage] = useState(0);
@@ -57,20 +58,49 @@ function SortableHead({ children, sortKey, currentKey, dir, onSort }: { children
   );
 }
 
-// --- Types ---
+function StatCard({ title, value, icon, subtitle, variant = 'default' }: { title: string; value: number; icon: React.ReactNode; subtitle?: string; variant?: string }) {
+  const colors: Record<string, string> = { default: 'text-primary', warning: 'text-yellow-600', destructive: 'text-destructive', success: 'text-green-600' };
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">{title}</p>
+            <p className={`text-2xl font-bold ${colors[variant] || colors.default}`}>₹{value.toLocaleString('en-IN')}</p>
+            {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+          </div>
+          <div className={`p-3 rounded-full bg-secondary ${colors[variant] || colors.default}`}>{icon}</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 type Fee = { id: string; amount: number; date: string; student_name: string | null; course: string | null; created_at: string };
 type Expense = { id: string; title: string; amount: number; date: string; category: string; created_at: string };
 type Salary = { id: string; staff_name: string; designation: string | null; salary_amount: number; payment_date: string; status: string; created_at: string };
+type Student = { id: string; name: string; course: string; year: number; semester: number; total_fees: number; paid_fees: number; phone: string | null; course_id: string | null };
 
 const EXPENSE_CATEGORIES = ['General', 'Infrastructure', 'Utilities', 'Supplies', 'Maintenance', 'Events', 'Other'];
 
+function getLast6Months() {
+  const now = new Date();
+  const months: { name: string; ms: string; me: string }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      name: format(d, 'MMM'),
+      ms: startOfMonth(d).toISOString().split('T')[0],
+      me: endOfMonth(d).toISOString().split('T')[0],
+    });
+  }
+  return months;
+}
+
 export default function AdminFinance() {
-  const { toast } = useToast();
-  const qc = useQueryClient();
   const now = new Date();
   const { activeCourses } = useCourseStructure();
 
-  // --- Data Queries ---
   const { data: fees = [] } = useQuery<Fee[]>({
     queryKey: ['fees_collection'],
     queryFn: async () => {
@@ -98,141 +128,146 @@ export default function AdminFinance() {
     },
   });
 
-  const { data: pendingFeesSetting } = useQuery({
-    queryKey: ['pending_fees_setting'],
+  const { data: students = [] } = useQuery<Student[]>({
+    queryKey: ['students_for_pending'],
     queryFn: async () => {
-      const { data } = await supabase.from('site_settings').select('*').eq('setting_key', 'pending_fees').single();
-      return data;
+      const { data, error } = await supabase.from('students').select('id, name, course, year, semester, total_fees, paid_fees, phone, course_id');
+      if (error) throw error;
+      return (data ?? []) as Student[];
     },
   });
 
-  // --- Computed ---
-  const monthStart = startOfMonth(now).toISOString().split('T')[0];
-  const monthEnd = endOfMonth(now).toISOString().split('T')[0];
-  const yearStart = startOfYear(now).toISOString().split('T')[0];
-  const yearEnd = endOfYear(now).toISOString().split('T')[0];
-
-  const monthlyFees = useMemo(() => fees.filter(f => f.date >= monthStart && f.date <= monthEnd).reduce((s, f) => s + Number(f.amount), 0), [fees, monthStart, monthEnd]);
-  const yearlyFees = useMemo(() => fees.filter(f => f.date >= yearStart && f.date <= yearEnd).reduce((s, f) => s + Number(f.amount), 0), [fees, yearStart, yearEnd]);
-  const monthlyExpenses = useMemo(() => expenses.filter(e => e.date >= monthStart && e.date <= monthEnd).reduce((s, e) => s + Number(e.amount), 0), [expenses, monthStart, monthEnd]);
+  // Global computed values
+  const totalIncome = useMemo(() => fees.reduce((s, f) => s + Number(f.amount), 0), [fees]);
+  const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount), 0), [expenses]);
   const totalSalariesPaid = useMemo(() => salaries.filter(s => s.status === 'paid').reduce((a, s) => a + Number(s.salary_amount), 0), [salaries]);
-  const totalSalariesPending = useMemo(() => salaries.filter(s => s.status === 'unpaid').reduce((a, s) => a + Number(s.salary_amount), 0), [salaries]);
-  const pendingFeesAmount = Number(pendingFeesSetting?.setting_value ?? 0);
-  const netBalance = monthlyFees - monthlyExpenses - salaries.filter(s => s.status === 'paid' && s.payment_date >= monthStart && s.payment_date <= monthEnd).reduce((a, s) => a + Number(s.salary_amount), 0);
+  const totalPendingFees = useMemo(() => students.reduce((s, st) => s + Math.max(0, Number(st.total_fees) - Number(st.paid_fees)), 0), [students]);
+  const netBalance = totalIncome - totalExpenses - totalSalariesPaid;
 
-  // Chart data - last 6 months
-  const chartData = useMemo(() => {
-    const months: { name: string; income: number; expenses: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const ms = startOfMonth(d).toISOString().split('T')[0];
-      const me = endOfMonth(d).toISOString().split('T')[0];
-      months.push({
-        name: format(d, 'MMM'),
-        income: fees.filter(f => f.date >= ms && f.date <= me).reduce((s, f) => s + Number(f.amount), 0),
-        expenses: expenses.filter(e => e.date >= ms && e.date <= me).reduce((s, e) => s + Number(e.amount), 0),
-      });
-    }
-    return months;
-  }, [fees, expenses]);
+  const months6 = useMemo(() => getLast6Months(), []);
 
-  const chartConfig = { income: { label: 'Income', color: 'hsl(var(--primary))' }, expenses: { label: 'Expenses', color: 'hsl(0 84% 60%)' } };
+  const overviewChartData = useMemo(() => {
+    return months6.map(m => ({
+      name: m.name,
+      income: fees.filter(f => f.date >= m.ms && f.date <= m.me).reduce((s, f) => s + Number(f.amount), 0),
+      expenses: expenses.filter(e => e.date >= m.ms && e.date <= m.me).reduce((s, e) => s + Number(e.amount), 0)
+        + salaries.filter(s => s.status === 'paid' && s.payment_date >= m.ms && s.payment_date <= m.me).reduce((a, s) => a + Number(s.salary_amount), 0),
+    }));
+  }, [fees, expenses, salaries, months6]);
+
+  const expenseBreakdown = useMemo(() => {
+    return [
+      { name: 'Expenses', value: totalExpenses },
+      { name: 'Salaries', value: totalSalariesPaid },
+    ].filter(d => d.value > 0);
+  }, [totalExpenses, totalSalariesPaid]);
+
+  const overviewConfig = {
+    income: { label: 'Income', color: 'hsl(var(--primary))' },
+    expenses: { label: 'Expenses', color: 'hsl(0 84% 60%)' },
+  };
+  const pieConfig = {
+    Expenses: { label: 'Expenses', color: 'hsl(0 84% 60%)' },
+    Salaries: { label: 'Salaries', color: 'hsl(45 93% 47%)' },
+  };
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <SummaryCard title="Monthly Fees" value={monthlyFees} icon={<IndianRupee className="h-5 w-5" />} subtitle={`Yearly: ₹${yearlyFees.toLocaleString('en-IN')}`} />
-          <SummaryCard title="Pending Fees" value={pendingFeesAmount} icon={<CircleDollarSign className="h-5 w-5" />} variant="warning" />
-          <SummaryCard title="Monthly Expenses" value={monthlyExpenses} icon={<TrendingDown className="h-5 w-5" />} variant="destructive" />
-          <SummaryCard title="Net Balance" value={netBalance} icon={<Wallet className="h-5 w-5" />} variant={netBalance >= 0 ? 'success' : 'destructive'} />
-        </div>
-
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base">Income vs Expenses (6 Months)</CardTitle></CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expenses" fill="var(--color-expenses)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-base">Fees Trend (6 Months)</CardTitle></CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line type="monotone" dataKey="income" stroke="var(--color-income)" strokeWidth={2} />
-                </LineChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Salary summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <SummaryCard title="Salaries Paid" value={totalSalariesPaid} icon={<TrendingUp className="h-5 w-5" />} variant="success" />
-          <SummaryCard title="Salaries Pending" value={totalSalariesPending} icon={<TrendingDown className="h-5 w-5" />} variant="warning" />
-        </div>
-
-        {/* Management Tabs */}
-        <Tabs defaultValue="fees" className="space-y-4">
-          <TabsList className="w-full flex flex-wrap h-auto gap-1">
-            <TabsTrigger value="fees" className="flex-1 min-w-[100px]">Fees Collection</TabsTrigger>
-            <TabsTrigger value="expenses" className="flex-1 min-w-[100px]">Expenses</TabsTrigger>
-            <TabsTrigger value="salaries" className="flex-1 min-w-[100px]">Salaries</TabsTrigger>
-            <TabsTrigger value="pending" className="flex-1 min-w-[100px]">Pending Fees</TabsTrigger>
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted p-1">
+            <TabsTrigger value="overview" className="flex-1 min-w-[90px]">Overview</TabsTrigger>
+            <TabsTrigger value="fees" className="flex-1 min-w-[90px]">Fees Collection</TabsTrigger>
+            <TabsTrigger value="expenses" className="flex-1 min-w-[90px]">Expenses</TabsTrigger>
+            <TabsTrigger value="salaries" className="flex-1 min-w-[90px]">Salaries</TabsTrigger>
+            <TabsTrigger value="pending" className="flex-1 min-w-[90px]">Pending Fees</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="fees"><FeesTab fees={fees} courses={activeCourses} /></TabsContent>
-          <TabsContent value="expenses"><ExpensesTab expenses={expenses} /></TabsContent>
-          <TabsContent value="salaries"><SalariesTab salaries={salaries} /></TabsContent>
-          <TabsContent value="pending"><PendingFeesTab currentValue={pendingFeesAmount} settingId={pendingFeesSetting?.id} /></TabsContent>
+          {/* ─── OVERVIEW TAB ─── */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard title="Total Income" value={totalIncome} icon={<IndianRupee className="h-5 w-5" />} />
+              <StatCard title="Total Expenses" value={totalExpenses + totalSalariesPaid} icon={<TrendingDown className="h-5 w-5" />} variant="destructive" subtitle="Expenses + Salaries" />
+              <StatCard title="Net Balance" value={netBalance} icon={<Wallet className="h-5 w-5" />} variant={netBalance >= 0 ? 'success' : 'destructive'} />
+              <StatCard title="Pending Fees" value={totalPendingFees} icon={<AlertTriangle className="h-5 w-5" />} variant="warning" subtitle={`${students.filter(s => Number(s.total_fees) - Number(s.paid_fees) > 0).length} defaulters`} />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BarChart3 className="h-4 w-4" />Income vs Expenses (6 Months)</CardTitle></CardHeader>
+                <CardContent>
+                  <ChartContainer config={overviewConfig} className="h-[280px] w-full">
+                    <BarChart data={overviewChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="expenses" fill="var(--color-expenses)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" />Income Trend (6 Months)</CardTitle></CardHeader>
+                <CardContent>
+                  <ChartContainer config={overviewConfig} className="h-[280px] w-full">
+                    <LineChart data={overviewChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Line type="monotone" dataKey="income" stroke="var(--color-income)" strokeWidth={2} dot={{ r: 4 }} />
+                    </LineChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            </div>
+            {expenseBreakdown.length > 0 && (
+              <Card>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><PieChartIcon className="h-4 w-4" />Expense Breakdown</CardTitle></CardHeader>
+                <CardContent className="flex items-center justify-center">
+                  <ChartContainer config={pieConfig} className="h-[280px] w-full max-w-md">
+                    <PieChart>
+                      <Pie data={expenseBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                        {expenseBreakdown.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                    </PieChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* ─── FEES TAB ─── */}
+          <TabsContent value="fees">
+            <FeesTab fees={fees} courses={activeCourses} months6={months6} />
+          </TabsContent>
+
+          {/* ─── EXPENSES TAB ─── */}
+          <TabsContent value="expenses">
+            <ExpensesTab expenses={expenses} months6={months6} />
+          </TabsContent>
+
+          {/* ─── SALARIES TAB ─── */}
+          <TabsContent value="salaries">
+            <SalariesTab salaries={salaries} months6={months6} />
+          </TabsContent>
+
+          {/* ─── PENDING FEES TAB ─── */}
+          <TabsContent value="pending">
+            <PendingFeesTab students={students} courses={activeCourses} />
+          </TabsContent>
         </Tabs>
       </div>
     </AdminLayout>
   );
 }
 
-// --- Summary Card ---
-function SummaryCard({ title, value, icon, subtitle, variant = 'default' }: { title: string; value: number; icon: React.ReactNode; subtitle?: string; variant?: string }) {
-  const colors: Record<string, string> = {
-    default: 'text-primary',
-    warning: 'text-yellow-600',
-    destructive: 'text-destructive',
-    success: 'text-green-600',
-  };
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className={`text-2xl font-bold ${colors[variant] || colors.default}`}>₹{value.toLocaleString('en-IN')}</p>
-            {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
-          </div>
-          <div className={`p-3 rounded-full bg-secondary ${colors[variant] || colors.default}`}>{icon}</div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// --- Fees Tab ---
-function FeesTab({ fees, courses }: { fees: Fee[]; courses: { id: string; name: string }[] }) {
+// ═══════════════════════════════════════════
+// FEES TAB
+// ═══════════════════════════════════════════
+function FeesTab({ fees, courses, months6 }: { fees: Fee[]; courses: { id: string; name: string }[]; months6: { name: string; ms: string; me: string }[] }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -245,6 +280,22 @@ function FeesTab({ fees, courses }: { fees: Fee[]; courses: { id: string; name: 
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const toggleSort = (k: string) => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('desc'); } };
+
+  const totalCollected = useMemo(() => fees.reduce((s, f) => s + Number(f.amount), 0), [fees]);
+  const now = new Date();
+  const ms = startOfMonth(now).toISOString().split('T')[0];
+  const me = endOfMonth(now).toISOString().split('T')[0];
+  const ys = startOfYear(now).toISOString().split('T')[0];
+  const ye = endOfYear(now).toISOString().split('T')[0];
+  const monthlyCollection = useMemo(() => fees.filter(f => f.date >= ms && f.date <= me).reduce((s, f) => s + Number(f.amount), 0), [fees, ms, me]);
+  const yearlyCollection = useMemo(() => fees.filter(f => f.date >= ys && f.date <= ye).reduce((s, f) => s + Number(f.amount), 0), [fees, ys, ye]);
+
+  const feesChartData = useMemo(() => months6.map(m => ({
+    name: m.name,
+    collected: fees.filter(f => f.date >= m.ms && f.date <= m.me).reduce((s, f) => s + Number(f.amount), 0),
+  })), [fees, months6]);
+
+  const feesConfig = { collected: { label: 'Collected', color: 'hsl(var(--primary))' } };
 
   const filtered = useMemo(() => {
     let d = [...fees];
@@ -281,75 +332,113 @@ function FeesTab({ fees, courses }: { fees: Fee[]; courses: { id: string; name: 
   const openEdit = (f: Fee) => { setEditItem(f); setForm({ amount: String(f.amount), date: f.date, student_name: f.student_name ?? '', course: f.course ?? '' }); setOpen(true); };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-        <CardTitle className="text-base">Fees Collection</CardTitle>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Fee</Button></DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{editItem ? 'Edit' : 'Add'} Fee Record</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>Amount (₹)*</Label><Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} /></div>
-              <div><Label>Date*</Label><Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></div>
-              <div><Label>Student Name</Label><Input value={form.student_name} onChange={e => setForm(p => ({ ...p, student_name: e.target.value }))} /></div>
-              <div>
-                <Label>Course</Label>
-                <Select value={form.course} onValueChange={v => setForm(p => ({ ...p, course: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
-                  <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
-                </Select>
+    <div className="space-y-6">
+      {/* Analytics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard title="Total Collected" value={totalCollected} icon={<IndianRupee className="h-5 w-5" />} />
+        <StatCard title="This Month" value={monthlyCollection} icon={<TrendingUp className="h-5 w-5" />} variant="success" />
+        <StatCard title="This Year" value={yearlyCollection} icon={<CircleDollarSign className="h-5 w-5" />} />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader><CardTitle className="text-base">Monthly Collection Trend</CardTitle></CardHeader>
+          <CardContent>
+            <ChartContainer config={feesConfig} className="h-[240px] w-full">
+              <LineChart data={feesChartData}>
+                <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="collected" stroke="var(--color-collected)" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base">Monthly Collection</CardTitle></CardHeader>
+          <CardContent>
+            <ChartContainer config={feesConfig} className="h-[240px] w-full">
+              <BarChart data={feesChartData}>
+                <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="collected" fill="var(--color-collected)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* List */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-base">Fees Collection Records</CardTitle>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild><Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Fee</Button></DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{editItem ? 'Edit' : 'Add'} Fee Record</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Amount (₹)*</Label><Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} /></div>
+                <div><Label>Date*</Label><Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></div>
+                <div><Label>Student Name</Label><Input value={form.student_name} onChange={e => setForm(p => ({ ...p, student_name: e.target.value }))} /></div>
+                <div>
+                  <Label>Course</Label>
+                  <Select value={form.course} onValueChange={v => setForm(p => ({ ...p, course: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
+                    <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <Button className="w-full" onClick={() => saveMutation.mutate()} disabled={!form.amount || saveMutation.isPending}>Save</Button>
               </div>
-              <Button className="w-full" onClick={() => saveMutation.mutate()} disabled={!form.amount || saveMutation.isPending}>Save</Button>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search student or course..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
             </div>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-2 mb-4">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search student or course..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
+            <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="w-auto" />
+            <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="w-auto" />
+            {hasFilters && <Button variant="ghost" size="icon" onClick={clearFilters}><X className="h-4 w-4" /></Button>}
           </div>
-          <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="w-auto" placeholder="From" />
-          <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="w-auto" placeholder="To" />
-          {hasFilters && <Button variant="ghost" size="icon" onClick={clearFilters}><X className="h-4 w-4" /></Button>}
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortableHead sortKey="date" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Date</SortableHead>
-                <TableHead>Student</TableHead>
-                <TableHead>Course</TableHead>
-                <SortableHead sortKey="amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Amount</SortableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paged.map(f => (
-                <TableRow key={f.id}>
-                  <TableCell>{f.date}</TableCell>
-                  <TableCell>{f.student_name || '-'}</TableCell>
-                  <TableCell>{f.course || '-'}</TableCell>
-                  <TableCell>₹{Number(f.amount).toLocaleString('en-IN')}</TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <SortableHead sortKey="date" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Date</SortableHead>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Course</TableHead>
+                  <SortableHead sortKey="amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Amount</SortableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-              {paged.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No fee records found</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        </div>
-        <PaginationControls page={page} totalPages={totalPages} setPage={setPage} total={total} />
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {paged.map(f => (
+                  <TableRow key={f.id}>
+                    <TableCell>{f.date}</TableCell>
+                    <TableCell>{f.student_name || '-'}</TableCell>
+                    <TableCell>{f.course || '-'}</TableCell>
+                    <TableCell>₹{Number(f.amount).toLocaleString('en-IN')}</TableCell>
+                    <TableCell className="text-right space-x-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {paged.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No fee records found</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </div>
+          <PaginationControls page={page} totalPages={totalPages} setPage={setPage} total={total} />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
-// --- Expenses Tab ---
-function ExpensesTab({ expenses }: { expenses: Expense[] }) {
+// ═══════════════════════════════════════════
+// EXPENSES TAB
+// ═══════════════════════════════════════════
+function ExpensesTab({ expenses, months6 }: { expenses: Expense[]; months6: { name: string; ms: string; me: string }[] }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -363,6 +452,22 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const toggleSort = (k: string) => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('desc'); } };
+
+  const totalExp = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount), 0), [expenses]);
+
+  const categoryData = useMemo(() => {
+    const map: Record<string, number> = {};
+    expenses.forEach(e => { map[e.category] = (map[e.category] || 0) + Number(e.amount); });
+    return Object.entries(map).map(([name, value]) => ({ name, value }));
+  }, [expenses]);
+
+  const monthlyExpData = useMemo(() => months6.map(m => ({
+    name: m.name,
+    amount: expenses.filter(e => e.date >= m.ms && e.date <= m.me).reduce((s, e) => s + Number(e.amount), 0),
+  })), [expenses, months6]);
+
+  const expBarConfig = { amount: { label: 'Expenses', color: 'hsl(0 84% 60%)' } };
+  const expPieConfig = Object.fromEntries(categoryData.map((c, i) => [c.name, { label: c.name, color: PIE_COLORS[i % PIE_COLORS.length] }]));
 
   const filtered = useMemo(() => {
     let d = [...expenses];
@@ -400,82 +505,118 @@ function ExpensesTab({ expenses }: { expenses: Expense[] }) {
   const openEdit = (e: Expense) => { setEditItem(e); setForm({ title: e.title, amount: String(e.amount), date: e.date, category: e.category }); setOpen(true); };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-        <CardTitle className="text-base">Expenses</CardTitle>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Expense</Button></DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{editItem ? 'Edit' : 'Add'} Expense</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>Title*</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} /></div>
-              <div><Label>Amount (₹)*</Label><Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} /></div>
-              <div><Label>Date*</Label><Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></div>
-              <div>
-                <Label>Category*</Label>
-                <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <StatCard title="Total Expenses" value={totalExp} icon={<TrendingDown className="h-5 w-5" />} variant="destructive" />
+        <StatCard title="Categories" value={categoryData.length} icon={<BarChart3 className="h-5 w-5" />} subtitle={`Across ${categoryData.length} categories`} />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader><CardTitle className="text-base">Category Distribution</CardTitle></CardHeader>
+          <CardContent className="flex items-center justify-center">
+            <ChartContainer config={expPieConfig} className="h-[260px] w-full max-w-md">
+              <PieChart>
+                <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  {categoryData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                </Pie>
+                <ChartTooltip content={<ChartTooltipContent />} />
+              </PieChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base">Monthly Expenses</CardTitle></CardHeader>
+          <CardContent>
+            <ChartContainer config={expBarConfig} className="h-[260px] w-full">
+              <BarChart data={monthlyExpData}>
+                <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="amount" fill="var(--color-amount)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-base">Expense Records</CardTitle>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild><Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Expense</Button></DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{editItem ? 'Edit' : 'Add'} Expense</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Title*</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} /></div>
+                <div><Label>Amount (₹)*</Label><Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} /></div>
+                <div><Label>Date*</Label><Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} /></div>
+                <div>
+                  <Label>Category*</Label>
+                  <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <Button className="w-full" onClick={() => saveMutation.mutate()} disabled={!form.title || !form.amount || saveMutation.isPending}>Save</Button>
               </div>
-              <Button className="w-full" onClick={() => saveMutation.mutate()} disabled={!form.title || !form.amount || saveMutation.isPending}>Save</Button>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search title or category..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
             </div>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-2 mb-4">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search title or category..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
+            <Select value={catFilter} onValueChange={v => { setCatFilter(v); setPage(0); }}>
+              <SelectTrigger className="w-[150px]"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="w-auto" />
+            <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="w-auto" />
+            {hasFilters && <Button variant="ghost" size="icon" onClick={clearFilters}><X className="h-4 w-4" /></Button>}
           </div>
-          <Select value={catFilter} onValueChange={v => { setCatFilter(v); setPage(0); }}>
-            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Category" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(0); }} className="w-auto" />
-          <Input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(0); }} className="w-auto" />
-          {hasFilters && <Button variant="ghost" size="icon" onClick={clearFilters}><X className="h-4 w-4" /></Button>}
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortableHead sortKey="date" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Date</SortableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Category</TableHead>
-                <SortableHead sortKey="amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Amount</SortableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paged.map(e => (
-                <TableRow key={e.id}>
-                  <TableCell>{e.date}</TableCell>
-                  <TableCell>{e.title}</TableCell>
-                  <TableCell><Badge variant="secondary">{e.category}</Badge></TableCell>
-                  <TableCell>₹{Number(e.amount).toLocaleString('en-IN')}</TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(e)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(e.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <SortableHead sortKey="date" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Date</SortableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Category</TableHead>
+                  <SortableHead sortKey="amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Amount</SortableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-              {paged.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No expenses found</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        </div>
-        <PaginationControls page={page} totalPages={totalPages} setPage={setPage} total={total} />
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {paged.map(e => (
+                  <TableRow key={e.id}>
+                    <TableCell>{e.date}</TableCell>
+                    <TableCell>{e.title}</TableCell>
+                    <TableCell><Badge variant="secondary">{e.category}</Badge></TableCell>
+                    <TableCell>₹{Number(e.amount).toLocaleString('en-IN')}</TableCell>
+                    <TableCell className="text-right space-x-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(e)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(e.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {paged.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No expenses found</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </div>
+          <PaginationControls page={page} totalPages={totalPages} setPage={setPage} total={total} />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
-// --- Salaries Tab ---
-function SalariesTab({ salaries }: { salaries: Salary[] }) {
+// ═══════════════════════════════════════════
+// SALARIES TAB
+// ═══════════════════════════════════════════
+function SalariesTab({ salaries, months6 }: { salaries: Salary[]; months6: { name: string; ms: string; me: string }[] }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -487,6 +628,17 @@ function SalariesTab({ salaries }: { salaries: Salary[] }) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const toggleSort = (k: string) => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('desc'); } };
+
+  const totalPaid = useMemo(() => salaries.filter(s => s.status === 'paid').reduce((a, s) => a + Number(s.salary_amount), 0), [salaries]);
+  const totalPending = useMemo(() => salaries.filter(s => s.status === 'unpaid').reduce((a, s) => a + Number(s.salary_amount), 0), [salaries]);
+
+  const salaryChartData = useMemo(() => months6.map(m => ({
+    name: m.name,
+    paid: salaries.filter(s => s.status === 'paid' && s.payment_date >= m.ms && s.payment_date <= m.me).reduce((a, s) => a + Number(s.salary_amount), 0),
+    unpaid: salaries.filter(s => s.status === 'unpaid' && s.payment_date >= m.ms && s.payment_date <= m.me).reduce((a, s) => a + Number(s.salary_amount), 0),
+  })), [salaries, months6]);
+
+  const salaryConfig = { paid: { label: 'Paid', color: 'hsl(142 76% 36%)' }, unpaid: { label: 'Unpaid', color: 'hsl(0 84% 60%)' } };
 
   const filtered = useMemo(() => {
     let d = [...salaries];
@@ -526,110 +678,237 @@ function SalariesTab({ salaries }: { salaries: Salary[] }) {
   const openEdit = (s: Salary) => { setEditItem(s); setForm({ staff_name: s.staff_name, designation: s.designation ?? '', salary_amount: String(s.salary_amount), payment_date: s.payment_date, status: s.status }); setOpen(true); };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
-        <CardTitle className="text-base">Staff Salaries</CardTitle>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Salary</Button></DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{editItem ? 'Edit' : 'Add'} Salary Record</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>Staff Name*</Label><Input value={form.staff_name} onChange={e => setForm(p => ({ ...p, staff_name: e.target.value }))} /></div>
-              <div><Label>Designation</Label><Input value={form.designation} onChange={e => setForm(p => ({ ...p, designation: e.target.value }))} /></div>
-              <div><Label>Salary Amount (₹)*</Label><Input type="number" value={form.salary_amount} onChange={e => setForm(p => ({ ...p, salary_amount: e.target.value }))} /></div>
-              <div><Label>Payment Date*</Label><Input type="date" value={form.payment_date} onChange={e => setForm(p => ({ ...p, payment_date: e.target.value }))} /></div>
-              <div>
-                <Label>Status*</Label>
-                <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="unpaid">Unpaid</SelectItem>
-                  </SelectContent>
-                </Select>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <StatCard title="Total Paid" value={totalPaid} icon={<TrendingUp className="h-5 w-5" />} variant="success" />
+        <StatCard title="Pending Salaries" value={totalPending} icon={<TrendingDown className="h-5 w-5" />} variant="warning" />
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base">Paid vs Unpaid (6 Months)</CardTitle></CardHeader>
+        <CardContent>
+          <ChartContainer config={salaryConfig} className="h-[260px] w-full">
+            <BarChart data={salaryChartData}>
+              <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="paid" fill="var(--color-paid)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="unpaid" fill="var(--color-unpaid)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-base">Salary Records</CardTitle>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild><Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Salary</Button></DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{editItem ? 'Edit' : 'Add'} Salary Record</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Staff Name*</Label><Input value={form.staff_name} onChange={e => setForm(p => ({ ...p, staff_name: e.target.value }))} /></div>
+                <div><Label>Designation</Label><Input value={form.designation} onChange={e => setForm(p => ({ ...p, designation: e.target.value }))} /></div>
+                <div><Label>Salary Amount (₹)*</Label><Input type="number" value={form.salary_amount} onChange={e => setForm(p => ({ ...p, salary_amount: e.target.value }))} /></div>
+                <div><Label>Payment Date*</Label><Input type="date" value={form.payment_date} onChange={e => setForm(p => ({ ...p, payment_date: e.target.value }))} /></div>
+                <div>
+                  <Label>Status*</Label>
+                  <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="unpaid">Unpaid</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button className="w-full" onClick={() => saveMutation.mutate()} disabled={!form.staff_name || !form.salary_amount || saveMutation.isPending}>Save</Button>
               </div>
-              <Button className="w-full" onClick={() => saveMutation.mutate()} disabled={!form.staff_name || !form.salary_amount || saveMutation.isPending}>Save</Button>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search staff or designation..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
             </div>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-2 mb-4">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search staff or designation..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
+            <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
+              <SelectTrigger className="w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="unpaid">Unpaid</SelectItem>
+              </SelectContent>
+            </Select>
+            {hasFilters && <Button variant="ghost" size="icon" onClick={clearFilters}><X className="h-4 w-4" /></Button>}
           </div>
-          <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}>
-            <SelectTrigger className="w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-              <SelectItem value="unpaid">Unpaid</SelectItem>
-            </SelectContent>
-          </Select>
-          {hasFilters && <Button variant="ghost" size="icon" onClick={clearFilters}><X className="h-4 w-4" /></Button>}
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortableHead sortKey="payment_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Date</SortableHead>
-                <TableHead>Staff</TableHead>
-                <TableHead>Designation</TableHead>
-                <SortableHead sortKey="salary_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Amount</SortableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paged.map(s => (
-                <TableRow key={s.id}>
-                  <TableCell>{s.payment_date}</TableCell>
-                  <TableCell>{s.staff_name}</TableCell>
-                  <TableCell>{s.designation || '-'}</TableCell>
-                  <TableCell>₹{Number(s.salary_amount).toLocaleString('en-IN')}</TableCell>
-                  <TableCell>
-                    <Badge className="cursor-pointer" variant={s.status === 'paid' ? 'default' : 'destructive'} onClick={() => toggleStatus.mutate(s)}>{s.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <SortableHead sortKey="payment_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Date</SortableHead>
+                  <TableHead>Staff</TableHead>
+                  <TableHead>Designation</TableHead>
+                  <SortableHead sortKey="salary_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Amount</SortableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-              {paged.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No salary records found</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        </div>
-        <PaginationControls page={page} totalPages={totalPages} setPage={setPage} total={total} />
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {paged.map(s => (
+                  <TableRow key={s.id}>
+                    <TableCell>{s.payment_date}</TableCell>
+                    <TableCell>{s.staff_name}</TableCell>
+                    <TableCell>{s.designation || '-'}</TableCell>
+                    <TableCell>₹{Number(s.salary_amount).toLocaleString('en-IN')}</TableCell>
+                    <TableCell>
+                      <Badge className="cursor-pointer" variant={s.status === 'paid' ? 'default' : 'destructive'} onClick={() => toggleStatus.mutate(s)}>{s.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right space-x-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {paged.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No salary records found</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </div>
+          <PaginationControls page={page} totalPages={totalPages} setPage={setPage} total={total} />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
-// --- Pending Fees Tab ---
-function PendingFeesTab({ currentValue, settingId }: { currentValue: number; settingId?: string }) {
-  const { toast } = useToast();
-  const qc = useQueryClient();
-  const [value, setValue] = useState(String(currentValue));
+// ═══════════════════════════════════════════
+// PENDING FEES TAB
+// ═══════════════════════════════════════════
+function PendingFeesTab({ students, courses }: { students: Student[]; courses: { id: string; name: string }[] }) {
+  const [search, setSearch] = useState('');
+  const [courseFilter, setCourseFilter] = useState('all');
+  const [sortKey, setSortKey] = useState('pending');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      if (!settingId) return;
-      const { error } = await supabase.from('site_settings').update({ setting_value: value }).eq('id', settingId);
-      if (error) throw error;
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['pending_fees_setting'] }); toast({ title: 'Updated' }); },
-    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
-  });
+  const toggleSort = (k: string) => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('desc'); } };
+
+  const defaulters = useMemo(() => students.filter(s => Number(s.total_fees) - Number(s.paid_fees) > 0).map(s => ({
+    ...s,
+    pending: Number(s.total_fees) - Number(s.paid_fees),
+  })), [students]);
+
+  const totalPending = useMemo(() => defaulters.reduce((s, d) => s + d.pending, 0), [defaulters]);
+
+  const byCourse = useMemo(() => {
+    const map: Record<string, number> = {};
+    defaulters.forEach(d => { map[d.course] = (map[d.course] || 0) + d.pending; });
+    return Object.entries(map).map(([name, value]) => ({ name, value }));
+  }, [defaulters]);
+
+  const pendingConfig = Object.fromEntries(byCourse.map((c, i) => [c.name, { label: c.name, color: PIE_COLORS[i % PIE_COLORS.length] }]));
+
+  const filtered = useMemo(() => {
+    let d = [...defaulters];
+    const q = search.toLowerCase();
+    if (q) d = d.filter(s => s.name.toLowerCase().includes(q) || s.course.toLowerCase().includes(q));
+    if (courseFilter !== 'all') d = d.filter(s => s.course === courseFilter);
+    d.sort((a, b) => {
+      const va = sortKey === 'pending' ? a.pending : sortKey === 'name' ? a.name : a.course;
+      const vb = sortKey === 'pending' ? b.pending : sortKey === 'name' ? b.name : b.course;
+      if (typeof va === 'number' && typeof vb === 'number') return sortDir === 'asc' ? va - vb : vb - va;
+      return sortDir === 'asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+    return d;
+  }, [defaulters, search, courseFilter, sortKey, sortDir]);
+
+  const { page, setPage, totalPages, paged, total } = usePagination(filtered);
+  const hasFilters = search || courseFilter !== 'all';
+  const clearFilters = () => { setSearch(''); setCourseFilter('all'); };
+
+  const uniqueCourses = useMemo(() => [...new Set(defaulters.map(d => d.course))], [defaulters]);
 
   return (
-    <Card>
-      <CardHeader><CardTitle className="text-base">Update Pending Fees</CardTitle></CardHeader>
-      <CardContent className="space-y-4 max-w-md">
-        <div><Label>Pending Fees Amount (₹)</Label><Input type="number" value={value} onChange={e => setValue(e.target.value)} /></div>
-        <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>Save</Button>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <StatCard title="Total Pending" value={totalPending} icon={<AlertTriangle className="h-5 w-5" />} variant="warning" />
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Number of Defaulters</p>
+                <p className="text-2xl font-bold text-destructive">{defaulters.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">out of {students.length} students</p>
+              </div>
+              <div className="p-3 rounded-full bg-secondary text-destructive"><Users className="h-5 w-5" /></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {byCourse.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Pending by Course</CardTitle></CardHeader>
+          <CardContent>
+            <ChartContainer config={pendingConfig} className="h-[260px] w-full">
+              <BarChart data={byCourse}>
+                <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  {byCourse.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Defaulters List</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search name or course..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9" />
+            </div>
+            <Select value={courseFilter} onValueChange={v => { setCourseFilter(v); setPage(0); }}>
+              <SelectTrigger className="w-[150px]"><SelectValue placeholder="Course" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Courses</SelectItem>
+                {uniqueCourses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {hasFilters && <Button variant="ghost" size="icon" onClick={clearFilters}><X className="h-4 w-4" /></Button>}
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <SortableHead sortKey="name" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Student</SortableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead>Year</TableHead>
+                  <TableHead>Total Fees</TableHead>
+                  <TableHead>Paid</TableHead>
+                  <SortableHead sortKey="pending" currentKey={sortKey} dir={sortDir} onSort={toggleSort}>Pending</SortableHead>
+                  <TableHead>Phone</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paged.map(s => (
+                  <TableRow key={s.id}>
+                    <TableCell className="font-medium">{s.name}</TableCell>
+                    <TableCell>{s.course}</TableCell>
+                    <TableCell>Year {s.year}</TableCell>
+                    <TableCell>₹{Number(s.total_fees).toLocaleString('en-IN')}</TableCell>
+                    <TableCell>₹{Number(s.paid_fees).toLocaleString('en-IN')}</TableCell>
+                    <TableCell><Badge variant="destructive">₹{s.pending.toLocaleString('en-IN')}</Badge></TableCell>
+                    <TableCell>{s.phone || '-'}</TableCell>
+                  </TableRow>
+                ))}
+                {paged.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No defaulters found</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </div>
+          <PaginationControls page={page} totalPages={totalPages} setPage={setPage} total={total} />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
