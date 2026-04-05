@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,9 +14,10 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { Plus, Pencil, Trash2, IndianRupee, TrendingUp, TrendingDown, Wallet, CircleDollarSign, Search, ArrowUpDown, ArrowUp, ArrowDown, X, ChevronLeft, ChevronRight, Users, AlertTriangle, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, IndianRupee, TrendingUp, TrendingDown, Wallet, CircleDollarSign, Search, ArrowUpDown, ArrowUp, ArrowDown, X, ChevronLeft, ChevronRight, Users, AlertTriangle, BarChart3, PieChart as PieChartIcon, Calendar, RotateCcw } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const PAGE_SIZE = 10;
 const PIE_COLORS = ['hsl(var(--primary))', 'hsl(0 84% 60%)', 'hsl(45 93% 47%)', 'hsl(142 76% 36%)', 'hsl(271 91% 65%)', 'hsl(199 89% 48%)', 'hsl(25 95% 53%)'];
@@ -83,6 +84,8 @@ type Student = { id: string; name: string; course: string; year: number; semeste
 
 const EXPENSE_CATEGORIES = ['General', 'Infrastructure', 'Utilities', 'Supplies', 'Maintenance', 'Events', 'Other'];
 
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
 function getLast6Months() {
   const now = new Date();
   const months: { name: string; ms: string; me: string }[] = [];
@@ -97,9 +100,39 @@ function getLast6Months() {
   return months;
 }
 
+function getMonthsForYear(year: number) {
+  const months: { name: string; ms: string; me: string }[] = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(year, i, 1);
+    months.push({
+      name: format(d, 'MMM'),
+      ms: startOfMonth(d).toISOString().split('T')[0],
+      me: endOfMonth(d).toISOString().split('T')[0],
+    });
+  }
+  return months;
+}
+
+type TimeFilter = { type: 'all' | 'year' | 'month'; year: number; month: number };
+
+function filterByTime<T extends Record<string, any>>(items: T[], filter: TimeFilter, dateField: string): T[] {
+  if (filter.type === 'all') return items;
+  return items.filter(item => {
+    const d = item[dateField] as string;
+    if (!d) return false;
+    const date = new Date(d);
+    if (filter.type === 'year') return date.getFullYear() === filter.year;
+    // month filter: match both year and month
+    return date.getFullYear() === filter.year && date.getMonth() === filter.month;
+  });
+}
+
 export default function AdminFinance() {
   const now = new Date();
   const { activeCourses } = useCourseStructure();
+
+  // ─── GLOBAL TIME FILTER STATE ───
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>({ type: 'all', year: now.getFullYear(), month: now.getMonth() });
 
   const { data: fees = [] } = useQuery<Fee[]>({
     queryKey: ['fees_collection'],
@@ -137,30 +170,51 @@ export default function AdminFinance() {
     },
   });
 
-  // Global computed values
-  const totalIncome = useMemo(() => fees.reduce((s, f) => s + Number(f.amount), 0), [fees]);
-  const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount), 0), [expenses]);
-  const totalSalariesPaid = useMemo(() => salaries.filter(s => s.status === 'paid').reduce((a, s) => a + Number(s.salary_amount), 0), [salaries]);
-  const totalPendingFees = useMemo(() => students.reduce((s, st) => s + Math.max(0, Number(st.total_fees) - Number(st.paid_fees)), 0), [students]);
-  const netBalance = totalIncome - totalExpenses - totalSalariesPaid;
+  // ─── EXTRACT UNIQUE YEARS FROM ALL DATA ───
+  const availableYears = useMemo(() => {
+    const yearSet = new Set<number>();
+    fees.forEach(f => f.date && yearSet.add(new Date(f.date).getFullYear()));
+    expenses.forEach(e => e.date && yearSet.add(new Date(e.date).getFullYear()));
+    salaries.forEach(s => s.payment_date && yearSet.add(new Date(s.payment_date).getFullYear()));
+    const years = Array.from(yearSet).sort((a, b) => b - a);
+    if (years.length === 0) years.push(now.getFullYear());
+    return years;
+  }, [fees, expenses, salaries]);
 
-  const months6 = useMemo(() => getLast6Months(), []);
+  // ─── FILTERED DATA ───
+  const filteredFees = useMemo(() => filterByTime(fees, timeFilter, 'date'), [fees, timeFilter]);
+  const filteredExpenses = useMemo(() => filterByTime(expenses, timeFilter, 'date'), [expenses, timeFilter]);
+  const filteredSalaries = useMemo(() => filterByTime(salaries, timeFilter, 'payment_date'), [salaries, timeFilter]);
+
+  // ─── CHART MONTHS (context-aware) ───
+  const chartMonths = useMemo(() => {
+    if (timeFilter.type === 'year') return getMonthsForYear(timeFilter.year);
+    if (timeFilter.type === 'month') return getMonthsForYear(timeFilter.year); // show full year context
+    return getLast6Months();
+  }, [timeFilter]);
+
+  // Global computed values from FILTERED data
+  const totalIncome = useMemo(() => filteredFees.reduce((s, f) => s + Number(f.amount), 0), [filteredFees]);
+  const totalExpenses_val = useMemo(() => filteredExpenses.reduce((s, e) => s + Number(e.amount), 0), [filteredExpenses]);
+  const totalSalariesPaid = useMemo(() => filteredSalaries.filter(s => s.status === 'paid').reduce((a, s) => a + Number(s.salary_amount), 0), [filteredSalaries]);
+  const totalPendingFees = useMemo(() => students.reduce((s, st) => s + Math.max(0, Number(st.total_fees) - Number(st.paid_fees)), 0), [students]);
+  const netBalance = totalIncome - totalExpenses_val - totalSalariesPaid;
 
   const overviewChartData = useMemo(() => {
-    return months6.map(m => ({
+    return chartMonths.map(m => ({
       name: m.name,
-      income: fees.filter(f => f.date >= m.ms && f.date <= m.me).reduce((s, f) => s + Number(f.amount), 0),
-      expenses: expenses.filter(e => e.date >= m.ms && e.date <= m.me).reduce((s, e) => s + Number(e.amount), 0)
-        + salaries.filter(s => s.status === 'paid' && s.payment_date >= m.ms && s.payment_date <= m.me).reduce((a, s) => a + Number(s.salary_amount), 0),
+      income: filteredFees.filter(f => f.date >= m.ms && f.date <= m.me).reduce((s, f) => s + Number(f.amount), 0),
+      expenses: filteredExpenses.filter(e => e.date >= m.ms && e.date <= m.me).reduce((s, e) => s + Number(e.amount), 0)
+        + filteredSalaries.filter(s => s.status === 'paid' && s.payment_date >= m.ms && s.payment_date <= m.me).reduce((a, s) => a + Number(s.salary_amount), 0),
     }));
-  }, [fees, expenses, salaries, months6]);
+  }, [filteredFees, filteredExpenses, filteredSalaries, chartMonths]);
 
   const expenseBreakdown = useMemo(() => {
     return [
-      { name: 'Expenses', value: totalExpenses },
+      { name: 'Expenses', value: totalExpenses_val },
       { name: 'Salaries', value: totalSalariesPaid },
     ].filter(d => d.value > 0);
-  }, [totalExpenses, totalSalariesPaid]);
+  }, [totalExpenses_val, totalSalariesPaid]);
 
   const overviewConfig = {
     income: { label: 'Income', color: 'hsl(var(--primary))' },
@@ -171,9 +225,63 @@ export default function AdminFinance() {
     Salaries: { label: 'Salaries', color: 'hsl(45 93% 47%)' },
   };
 
+  // ─── FILTER LABEL ───
+  const filterLabel = timeFilter.type === 'all' ? 'All Time' : timeFilter.type === 'year' ? `Year ${timeFilter.year}` : `${MONTH_NAMES[timeFilter.month]} ${timeFilter.year}`;
+
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* ─── GLOBAL TIME FILTER BAR ─── */}
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span>Filter:</span>
+              </div>
+              <ToggleGroup
+                type="single"
+                value={timeFilter.type}
+                onValueChange={(v) => {
+                  if (v) setTimeFilter(prev => ({ ...prev, type: v as TimeFilter['type'] }));
+                }}
+                className="bg-muted rounded-lg p-0.5"
+              >
+                <ToggleGroupItem value="all" className="text-xs px-3 h-8 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md">All</ToggleGroupItem>
+                <ToggleGroupItem value="year" className="text-xs px-3 h-8 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md">Yearly</ToggleGroupItem>
+                <ToggleGroupItem value="month" className="text-xs px-3 h-8 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground rounded-md">Monthly</ToggleGroupItem>
+              </ToggleGroup>
+
+              {timeFilter.type !== 'all' && (
+                <Select value={String(timeFilter.year)} onValueChange={v => setTimeFilter(prev => ({ ...prev, year: Number(v) }))}>
+                  <SelectTrigger className="w-[110px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {availableYears.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {timeFilter.type === 'month' && (
+                <Select value={String(timeFilter.month)} onValueChange={v => setTimeFilter(prev => ({ ...prev, month: Number(v) }))}>
+                  <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {MONTH_NAMES.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+
+              <div className="flex items-center gap-2 ml-auto">
+                <Badge variant="secondary" className="text-xs font-normal">Showing: {filterLabel}</Badge>
+                {timeFilter.type !== 'all' && (
+                  <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={() => setTimeFilter({ type: 'all', year: now.getFullYear(), month: now.getMonth() })}>
+                    <RotateCcw className="h-3 w-3" /> Reset
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted p-1">
             <TabsTrigger value="overview" className="flex-1 min-w-[90px]">Overview</TabsTrigger>
@@ -187,13 +295,13 @@ export default function AdminFinance() {
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard title="Total Income" value={totalIncome} icon={<IndianRupee className="h-5 w-5" />} />
-              <StatCard title="Total Expenses" value={totalExpenses + totalSalariesPaid} icon={<TrendingDown className="h-5 w-5" />} variant="destructive" subtitle="Expenses + Salaries" />
+              <StatCard title="Total Expenses" value={totalExpenses_val + totalSalariesPaid} icon={<TrendingDown className="h-5 w-5" />} variant="destructive" subtitle="Expenses + Salaries" />
               <StatCard title="Net Balance" value={netBalance} icon={<Wallet className="h-5 w-5" />} variant={netBalance >= 0 ? 'success' : 'destructive'} />
               <StatCard title="Pending Fees" value={totalPendingFees} icon={<AlertTriangle className="h-5 w-5" />} variant="warning" subtitle={`${students.filter(s => Number(s.total_fees) - Number(s.paid_fees) > 0).length} defaulters`} />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card>
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BarChart3 className="h-4 w-4" />Income vs Expenses (6 Months)</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BarChart3 className="h-4 w-4" />Income vs Expenses</CardTitle></CardHeader>
                 <CardContent>
                   <ChartContainer config={overviewConfig} className="h-[280px] w-full">
                     <BarChart data={overviewChartData}>
@@ -208,7 +316,7 @@ export default function AdminFinance() {
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" />Income Trend (6 Months)</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" />Income Trend</CardTitle></CardHeader>
                 <CardContent>
                   <ChartContainer config={overviewConfig} className="h-[280px] w-full">
                     <LineChart data={overviewChartData}>
@@ -241,17 +349,17 @@ export default function AdminFinance() {
 
           {/* ─── FEES TAB ─── */}
           <TabsContent value="fees">
-            <FeesTab fees={fees} courses={activeCourses} months6={months6} />
+            <FeesTab fees={filteredFees} courses={activeCourses} months6={chartMonths} />
           </TabsContent>
 
           {/* ─── EXPENSES TAB ─── */}
           <TabsContent value="expenses">
-            <ExpensesTab expenses={expenses} months6={months6} />
+            <ExpensesTab expenses={filteredExpenses} months6={chartMonths} />
           </TabsContent>
 
           {/* ─── SALARIES TAB ─── */}
           <TabsContent value="salaries">
-            <SalariesTab salaries={salaries} months6={months6} />
+            <SalariesTab salaries={filteredSalaries} months6={chartMonths} />
           </TabsContent>
 
           {/* ─── PENDING FEES TAB ─── */}
