@@ -84,6 +84,8 @@ type Student = { id: string; name: string; course: string; year: number; semeste
 
 const EXPENSE_CATEGORIES = ['General', 'Infrastructure', 'Utilities', 'Supplies', 'Maintenance', 'Events', 'Other'];
 
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
 function getLast6Months() {
   const now = new Date();
   const months: { name: string; ms: string; me: string }[] = [];
@@ -96,6 +98,33 @@ function getLast6Months() {
     });
   }
   return months;
+}
+
+function getMonthsForYear(year: number) {
+  const months: { name: string; ms: string; me: string }[] = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(year, i, 1);
+    months.push({
+      name: format(d, 'MMM'),
+      ms: startOfMonth(d).toISOString().split('T')[0],
+      me: endOfMonth(d).toISOString().split('T')[0],
+    });
+  }
+  return months;
+}
+
+type TimeFilter = { type: 'all' | 'year' | 'month'; year: number; month: number };
+
+function filterByTime<T extends Record<string, any>>(items: T[], filter: TimeFilter, dateField: string): T[] {
+  if (filter.type === 'all') return items;
+  return items.filter(item => {
+    const d = item[dateField] as string;
+    if (!d) return false;
+    const date = new Date(d);
+    if (filter.type === 'year') return date.getFullYear() === filter.year;
+    // month filter: match both year and month
+    return date.getFullYear() === filter.year && date.getMonth() === filter.month;
+  });
 }
 
 export default function AdminFinance() {
