@@ -47,6 +47,38 @@ export type Database = {
         }
         Relationships: []
       }
+      classes: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_submissions: {
         Row: {
           created_at: string | null
@@ -85,6 +117,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          institution_type: string
           is_active: boolean
           name: string
         }
@@ -92,6 +125,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          institution_type?: string
           is_active?: boolean
           name: string
         }
@@ -99,6 +133,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          institution_type?: string
           is_active?: boolean
           name?: string
         }
@@ -558,6 +593,38 @@ export type Database = {
         }
         Relationships: []
       }
+      sections: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sections_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       semesters: {
         Row: {
           created_at: string
@@ -695,6 +762,7 @@ export type Database = {
           admission_date: string
           admission_number: string | null
           admission_status: string
+          class_id: string | null
           course: string
           course_id: string | null
           created_at: string
@@ -706,6 +774,7 @@ export type Database = {
           name: string
           paid_fees: number
           phone: string | null
+          section_id: string | null
           semester: number
           semester_id: string | null
           total_fees: number
@@ -718,6 +787,7 @@ export type Database = {
           admission_date?: string
           admission_number?: string | null
           admission_status?: string
+          class_id?: string | null
           course: string
           course_id?: string | null
           created_at?: string
@@ -729,6 +799,7 @@ export type Database = {
           name: string
           paid_fees?: number
           phone?: string | null
+          section_id?: string | null
           semester?: number
           semester_id?: string | null
           total_fees?: number
@@ -741,6 +812,7 @@ export type Database = {
           admission_date?: string
           admission_number?: string | null
           admission_status?: string
+          class_id?: string | null
           course?: string
           course_id?: string | null
           created_at?: string
@@ -752,6 +824,7 @@ export type Database = {
           name?: string
           paid_fees?: number
           phone?: string | null
+          section_id?: string | null
           semester?: number
           semester_id?: string | null
           total_fees?: number
