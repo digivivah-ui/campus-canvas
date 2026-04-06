@@ -170,6 +170,22 @@ export default function AdminFinance() {
     },
   });
 
+  const { data: allDiscounts = [] } = useQuery<{ student_id: string; amount: number }[]>({
+    queryKey: ['finance-discounts'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('discounts').select('student_id, amount');
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  const discountByStudent = useMemo(() => {
+    const map: Record<string, number> = {};
+    allDiscounts.forEach(d => { map[d.student_id] = (map[d.student_id] || 0) + Number(d.amount); });
+    return map;
+  }, [allDiscounts]);
+  const totalDiscounts = useMemo(() => allDiscounts.reduce((s, d) => s + Number(d.amount), 0), [allDiscounts]);
+
   // ─── EXTRACT UNIQUE YEARS FROM ALL DATA ───
   const availableYears = useMemo(() => {
     const yearSet = new Set<number>();
