@@ -181,6 +181,30 @@ export type Database = {
         }
         Relationships: []
       }
+      discounts: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          reason: string | null
+          student_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          reason?: string | null
+          student_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          reason?: string | null
+          student_id?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string | null
