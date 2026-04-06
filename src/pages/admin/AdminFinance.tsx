@@ -383,7 +383,7 @@ export default function AdminFinance() {
 
           {/* ─── PENDING FEES TAB ─── */}
           <TabsContent value="pending">
-            <PendingFeesTab students={students} courses={activeCourses} />
+            <PendingFeesTab students={students} courses={activeCourses} discountByStudent={discountByStudent} />
           </TabsContent>
         </Tabs>
       </div>
