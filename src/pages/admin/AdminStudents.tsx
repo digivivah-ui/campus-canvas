@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
-import { Plus, Pencil, Search, Eye, Users, GraduationCap, UserPlus, ChevronLeft, ChevronRight, BookOpen, Calendar, Layers, ArrowLeft, X, School } from 'lucide-react';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { Plus, Pencil, Search, Eye, Users, GraduationCap, UserPlus, ChevronLeft, ChevronRight, BookOpen, Calendar, Layers, ArrowLeft, X, School, Percent, Printer, Share2, MessageCircle } from 'lucide-react';
 
 type Student = {
   id: string; name: string; full_name: string | null; gender: string | null; date_of_birth: string | null;
@@ -23,6 +24,8 @@ type Student = {
   admission_date: string; admission_number: string | null; admission_status: string;
   total_fees: number; paid_fees: number; created_at: string; updated_at: string;
 };
+
+type Discount = { id: string; student_id: string; amount: number; reason: string | null; created_at: string };
 
 const ITEMS_PER_PAGE = 15;
 
@@ -38,6 +41,7 @@ type FilterContext = { type: 'course' | 'year' | 'semester' | 'class' | 'section
 export default function AdminStudents() {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { getSetting } = useSiteSettings();
   const {
     courses, years, semesters, classes, sections,
     activeCourses, collegeCourses, schoolCourses,
@@ -59,6 +63,11 @@ export default function AdminStudents() {
   const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [profileStudent, setProfileStudent] = useState<Student | null>(null);
+  const [discountOpen, setDiscountOpen] = useState<Student | null>(null);
+  const [discountAmount, setDiscountAmount] = useState('');
+  const [discountReason, setDiscountReason] = useState('');
+  const [receiptFee, setReceiptFee] = useState<any>(null);
+  const [receiptStudent, setReceiptStudent] = useState<Student | null>(null);
 
   const { data: students = [], isLoading } = useQuery<Student[]>({
     queryKey: ['admin-students'],
@@ -66,6 +75,15 @@ export default function AdminStudents() {
       const { data, error } = await supabase.from('students').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return (data ?? []) as Student[];
+    },
+  });
+
+  const { data: allDiscounts = [] } = useQuery<Discount[]>({
+    queryKey: ['all-discounts'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('discounts').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Discount[];
     },
   });
 
@@ -79,10 +97,30 @@ export default function AdminStudents() {
     },
   });
 
+  const { data: studentDiscounts = [] } = useQuery<Discount[]>({
+    queryKey: ['student-discounts', profileStudent?.id],
+    enabled: !!profileStudent,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('discounts').select('*').eq('student_id', profileStudent!.id).order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Discount[];
+    },
+  });
+
+  // Compute discount totals per student
+  const discountByStudent = useMemo(() => {
+    const map: Record<string, number> = {};
+    allDiscounts.forEach(d => { map[d.student_id] = (map[d.student_id] || 0) + Number(d.amount); });
+    return map;
+  }, [allDiscounts]);
+
   const analytics = useMemo(() => {
     const total = students.length;
     const active = students.filter(s => s.admission_status === 'active').length;
-    const totalPending = students.reduce((sum, s) => sum + Math.max(0, Number(s.total_fees) - Number(s.paid_fees)), 0);
+    const totalPending = students.reduce((sum, s) => {
+      const disc = discountByStudent[s.id] || 0;
+      return sum + Math.max(0, Number(s.total_fees) - Number(s.paid_fees) - disc);
+    }, 0);
     const byCourse: Record<string, number> = {};
     const byYear: Record<string, number> = {};
     const bySemester: Record<string, number> = {};
@@ -96,7 +134,7 @@ export default function AdminStudents() {
       if (s.section_id) bySection[s.section_id] = (bySection[s.section_id] || 0) + 1;
     });
     return { total, active, totalPending, byCourse, byYear, bySemester, byClass, bySection };
-  }, [students]);
+  }, [students, discountByStudent]);
 
   const filtered = useMemo(() => {
     let list = students;
@@ -165,9 +203,17 @@ export default function AdminStudents() {
         phone: form.phone || null, email: form.email || null, address: form.address || null,
         course_id: form.course_id, course: courseName,
         admission_date: form.admission_date,
-        total_fees: Number(form.total_fees) || 0, paid_fees: Number(form.paid_fees) || 0,
         admission_status: form.admission_status,
       };
+
+      // Only set total_fees on new admission or if not editing
+      if (!editStudent) {
+        payload.total_fees = Number(form.total_fees) || 0;
+        payload.paid_fees = Number(form.paid_fees) || 0;
+      } else {
+        // On edit, allow total_fees change but NOT paid_fees (paid_fees is read-only)
+        payload.total_fees = Number(form.total_fees) || 0;
+      }
 
       if (courseType === 'college') {
         payload.year_id = form.year_id; payload.semester_id = form.semester_id;
@@ -195,6 +241,27 @@ export default function AdminStudents() {
     onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
 
+  const discountMutation = useMutation({
+    mutationFn: async () => {
+      if (!discountOpen || !discountAmount) throw new Error('Amount is required');
+      const amt = Number(discountAmount);
+      if (amt <= 0) throw new Error('Amount must be positive');
+      const { error } = await supabase.from('discounts').insert({
+        student_id: discountOpen.id,
+        amount: amt,
+        reason: discountReason || null,
+      } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['all-discounts'] });
+      qc.invalidateQueries({ queryKey: ['student-discounts'] });
+      setDiscountOpen(null); setDiscountAmount(''); setDiscountReason('');
+      toast({ title: 'Discount applied successfully' });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
   const toggleStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from('students').update({ admission_status: status === 'active' ? 'inactive' : 'active' }).eq('id', id);
@@ -218,8 +285,39 @@ export default function AdminStudents() {
 
   const openAdd = () => { setEditStudent(null); setForm(emptyForm); setFormOpen(true); };
 
-  // Determine selected course type for list view column display
   const selectedCourseType = filterCourse !== 'all' ? getCourseType(filterCourse) : null;
+
+  const getStudentStructureLabel = (s: Student) => {
+    const type = s.course_id ? getCourseType(s.course_id) : 'college';
+    const courseName = s.course_id ? getCourseName(s.course_id) : s.course;
+    if (type === 'school') {
+      const cls = s.class_id ? getClassName(s.class_id) : '';
+      const sec = s.section_id ? getSectionName(s.section_id) : '';
+      return `${courseName}${cls ? ` - ${cls}` : ''}${sec ? ` (${sec})` : ''}`;
+    }
+    const yr = s.year_id ? getYearName(s.year_id) : '';
+    const sem = s.semester_id ? getSemesterName(s.semester_id) : '';
+    return `${courseName}${yr ? ` - ${yr}` : ''}${sem ? ` / ${sem}` : ''}`;
+  };
+
+  const institutionName = getSetting('institution_name', 'Our Institution');
+
+  const handlePrintReceipt = (student: Student, fee: any) => {
+    setReceiptStudent(student);
+    setReceiptFee(fee);
+  };
+
+  const handleWhatsAppShare = (student: Student, fee: any) => {
+    const structureLabel = getStudentStructureLabel(student);
+    const msg = `📄 *Fee Receipt*
+Student: ${student.full_name || student.name}
+${structureLabel}
+Admission No: ${student.admission_number || '-'}
+Amount Paid: ₹${Number(fee.amount).toLocaleString('en-IN')}
+Date: ${fee.date}
+Thank you.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  };
 
   return (
     <AdminLayout>
@@ -259,7 +357,6 @@ export default function AdminStudents() {
               </CardContent></Card>
             </div>
 
-            {/* College Course-wise */}
             {collegeCourses.length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary" /> College Courses</h2>
@@ -276,7 +373,6 @@ export default function AdminStudents() {
               </div>
             )}
 
-            {/* School Course-wise */}
             {schoolCourses.length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><School className="h-5 w-5 text-primary" /> School Courses</h2>
@@ -293,7 +389,6 @@ export default function AdminStudents() {
               </div>
             )}
 
-            {/* Year-wise (College) */}
             {years.filter(y => y.is_active).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /> Year-wise Distribution</h2>
@@ -310,7 +405,6 @@ export default function AdminStudents() {
               </div>
             )}
 
-            {/* Class-wise (School) */}
             {classes.filter(cl => cl.is_active).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><School className="h-5 w-5 text-primary" /> Class-wise Distribution</h2>
@@ -327,7 +421,6 @@ export default function AdminStudents() {
               </div>
             )}
 
-            {/* Semester-wise */}
             {semesters.filter(s => s.is_active).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Layers className="h-5 w-5 text-primary" /> Semester-wise Distribution</h2>
@@ -347,7 +440,6 @@ export default function AdminStudents() {
               </div>
             )}
 
-            {/* Section-wise */}
             {sections.filter(s => s.is_active).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Layers className="h-5 w-5 text-primary" /> Section-wise Distribution</h2>
@@ -446,10 +538,14 @@ export default function AdminStudents() {
                   <TableBody>
                     {paginated.map(s => {
                       const type = s.course_id ? getCourseType(s.course_id) : 'college';
+                      const disc = discountByStudent[s.id] || 0;
                       return (
                         <TableRow key={s.id}>
                           <TableCell className="font-mono text-xs">{s.admission_number || '-'}</TableCell>
-                          <TableCell className="font-medium">{s.full_name || s.name}</TableCell>
+                          <TableCell>
+                            <div className="font-medium">{s.full_name || s.name}</div>
+                            {disc > 0 && <Badge variant="outline" className="text-xs mt-0.5 text-orange-600 border-orange-300"><Percent className="h-3 w-3 mr-0.5" />Discount Applied</Badge>}
+                          </TableCell>
                           <TableCell>{s.course_id ? getCourseName(s.course_id) : s.course}</TableCell>
                           <TableCell>{type === 'school' ? (s.class_id ? getClassName(s.class_id) : '-') : (s.year_id ? getYearName(s.year_id) : s.year)}</TableCell>
                           <TableCell>{type === 'school' ? (s.section_id ? getSectionName(s.section_id) : '-') : (s.semester_id ? getSemesterName(s.semester_id) : s.semester)}</TableCell>
@@ -459,9 +555,12 @@ export default function AdminStudents() {
                               {s.admission_status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right space-x-1">
-                            <Button variant="ghost" size="icon" onClick={() => setProfileStudent(s)}><Eye className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => setProfileStudent(s)} title="View"><Eye className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => openEdit(s)} title="Edit"><Pencil className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" onClick={() => { setDiscountOpen(s); setDiscountAmount(''); setDiscountReason(''); }} title="Give Discount"><Percent className="h-4 w-4" /></Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -485,7 +584,7 @@ export default function AdminStudents() {
           </div>
         )}
 
-        {/* Edit Dialog */}
+        {/* Edit/Add Dialog */}
         <Dialog open={formOpen} onOpenChange={v => { if (!v) { setFormOpen(false); setEditStudent(null); } }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editStudent ? 'Edit Student' : 'New Admission'}</DialogTitle></DialogHeader>
@@ -504,8 +603,31 @@ export default function AdminStudents() {
           </DialogContent>
         </Dialog>
 
+        {/* Discount Dialog */}
+        <Dialog open={!!discountOpen} onOpenChange={v => { if (!v) setDiscountOpen(null); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader><DialogTitle>Give Discount</DialogTitle></DialogHeader>
+            {discountOpen && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">Student: <span className="font-medium text-foreground">{discountOpen.full_name || discountOpen.name}</span></p>
+                <div>
+                  <Label>Discount Amount (₹) *</Label>
+                  <Input type="number" value={discountAmount} onChange={e => setDiscountAmount(e.target.value)} placeholder="Enter amount" />
+                </div>
+                <div>
+                  <Label>Reason (optional)</Label>
+                  <Textarea value={discountReason} onChange={e => setDiscountReason(e.target.value)} placeholder="Scholarship, merit, etc." rows={2} />
+                </div>
+                <Button className="w-full" onClick={() => discountMutation.mutate()} disabled={!discountAmount || discountMutation.isPending}>
+                  {discountMutation.isPending ? 'Applying...' : 'Apply Discount'}
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Profile Dialog */}
-        <Dialog open={!!profileStudent} onOpenChange={v => { if (!v) setProfileStudent(null); }}>
+        <Dialog open={!!profileStudent} onOpenChange={v => { if (!v) { setProfileStudent(null); setReceiptFee(null); setReceiptStudent(null); } }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Student Profile</DialogTitle></DialogHeader>
             {profileStudent && (
@@ -513,7 +635,27 @@ export default function AdminStudents() {
                 student={profileStudent}
                 getCourseName={getCourseName} getYearName={getYearName} getSemesterName={getSemesterName}
                 getClassName={getClassName} getSectionName={getSectionName} getCourseType={getCourseType}
-                fees={studentFees}
+                fees={studentFees} discounts={studentDiscounts}
+                discountTotal={discountByStudent[profileStudent.id] || 0}
+                onPrintReceipt={(fee) => handlePrintReceipt(profileStudent, fee)}
+                onShareReceipt={(fee) => handleWhatsAppShare(profileStudent, fee)}
+                institutionName={institutionName}
+                getStudentStructureLabel={getStudentStructureLabel}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Receipt Print Dialog */}
+        <Dialog open={!!receiptFee} onOpenChange={v => { if (!v) { setReceiptFee(null); setReceiptStudent(null); } }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>Fee Receipt</DialogTitle></DialogHeader>
+            {receiptFee && receiptStudent && (
+              <ReceiptView
+                student={receiptStudent}
+                fee={receiptFee}
+                institutionName={institutionName}
+                structureLabel={getStudentStructureLabel(receiptStudent)}
               />
             )}
           </DialogContent>
@@ -618,8 +760,14 @@ function StudentForm({
         <h3 className="font-semibold text-sm text-muted-foreground mb-3">Admission & Fees</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div><Label>Admission Date *</Label><Input type="date" value={form.admission_date} onChange={e => setForm(p => ({ ...p, admission_date: e.target.value }))} /></div>
-          <div><Label>Total Fees (₹)</Label><Input type="number" value={form.total_fees} onChange={e => setForm(p => ({ ...p, total_fees: e.target.value }))} /></div>
-          <div><Label>Paid Fees (₹)</Label><Input type="number" value={form.paid_fees} onChange={e => setForm(p => ({ ...p, paid_fees: e.target.value }))} /></div>
+          <div>
+            <Label>Total Fees (₹)</Label>
+            <Input type="number" value={form.total_fees} onChange={e => setForm(p => ({ ...p, total_fees: e.target.value }))} />
+          </div>
+          <div>
+            <Label>Paid Fees (₹) {isEdit && <span className="text-xs text-muted-foreground">(read-only)</span>}</Label>
+            <Input type="number" value={form.paid_fees} onChange={e => !isEdit && setForm(p => ({ ...p, paid_fees: e.target.value }))} disabled={isEdit} className={isEdit ? 'bg-muted cursor-not-allowed' : ''} />
+          </div>
         </div>
         {isEdit && (
           <div className="mt-4 w-48">
@@ -641,7 +789,8 @@ function StudentForm({
 
 // --- Student Profile ---
 function StudentProfile({
-  student, getCourseName, getYearName, getSemesterName, getClassName, getSectionName, getCourseType, fees,
+  student, getCourseName, getYearName, getSemesterName, getClassName, getSectionName, getCourseType, fees, discounts, discountTotal,
+  onPrintReceipt, onShareReceipt, institutionName, getStudentStructureLabel,
 }: {
   student: Student;
   getCourseName: (id: string | null) => string;
@@ -651,8 +800,15 @@ function StudentProfile({
   getSectionName: (id: string | null) => string;
   getCourseType: (id: string | null) => string;
   fees: any[];
+  discounts: Discount[];
+  discountTotal: number;
+  onPrintReceipt: (fee: any) => void;
+  onShareReceipt: (fee: any) => void;
+  institutionName: string;
+  getStudentStructureLabel: (s: Student) => string;
 }) {
-  const pending = Math.max(0, Number(student.total_fees) - Number(student.paid_fees));
+  const totalPaid = Number(student.paid_fees) + discountTotal;
+  const pending = Math.max(0, Number(student.total_fees) - totalPaid);
   const type = getCourseType(student.course_id);
 
   return (
@@ -699,11 +855,17 @@ function StudentProfile({
 
       <div>
         <h3 className="font-semibold text-sm text-muted-foreground mb-2">Fee Information</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Total</p><p className="text-lg font-bold">₹{Number(student.total_fees).toLocaleString('en-IN')}</p></CardContent></Card>
-          <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Paid</p><p className="text-lg font-bold text-green-600">₹{Number(student.paid_fees).toLocaleString('en-IN')}</p></CardContent></Card>
-          <Card><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">Pending</p><p className={`text-lg font-bold ${pending > 0 ? 'text-destructive' : 'text-green-600'}`}>₹{pending.toLocaleString('en-IN')}</p></CardContent></Card>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">Total</p><p className="text-lg font-bold">₹{Number(student.total_fees).toLocaleString('en-IN')}</p></CardContent></Card>
+          <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">Paid</p><p className="text-lg font-bold text-green-600">₹{Number(student.paid_fees).toLocaleString('en-IN')}</p></CardContent></Card>
+          <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">Discount</p><p className="text-lg font-bold text-orange-600">₹{discountTotal.toLocaleString('en-IN')}</p></CardContent></Card>
+          <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">Pending</p><p className={`text-lg font-bold ${pending > 0 ? 'text-destructive' : 'text-green-600'}`}>₹{pending.toLocaleString('en-IN')}</p></CardContent></Card>
         </div>
+        {discountTotal > 0 && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Effective Paid: ₹{Number(student.paid_fees).toLocaleString('en-IN')} (paid) + ₹{discountTotal.toLocaleString('en-IN')} (discount) = ₹{totalPaid.toLocaleString('en-IN')}
+          </p>
+        )}
       </div>
 
       {fees.length > 0 && (
@@ -711,16 +873,124 @@ function StudentProfile({
           <h3 className="font-semibold text-sm text-muted-foreground mb-2">Fee Transactions</h3>
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader><TableRow><TableHead>Date</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Receipt</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
                 {fees.map((f: any) => (
-                  <TableRow key={f.id}><TableCell>{f.date}</TableCell><TableCell className="text-right">₹{Number(f.amount).toLocaleString('en-IN')}</TableCell></TableRow>
+                  <TableRow key={f.id}>
+                    <TableCell>{f.date}</TableCell>
+                    <TableCell className="text-right">₹{Number(f.amount).toLocaleString('en-IN')}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onPrintReceipt(f)} title="Print Receipt"><Printer className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onShareReceipt(f)} title="Share on WhatsApp"><MessageCircle className="h-4 w-4 text-green-600" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
         </div>
       )}
+
+      {discounts.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-sm text-muted-foreground mb-2">Discount History</h3>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Reason</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {discounts.map(d => (
+                  <TableRow key={d.id}>
+                    <TableCell>{new Date(d.created_at).toLocaleDateString('en-IN')}</TableCell>
+                    <TableCell>{d.reason || '-'}</TableCell>
+                    <TableCell className="text-right text-orange-600">₹{Number(d.amount).toLocaleString('en-IN')}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Receipt View ---
+function ReceiptView({ student, fee, institutionName, structureLabel }: {
+  student: Student; fee: any; institutionName: string; structureLabel: string;
+}) {
+  const receiptRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    const content = receiptRef.current;
+    if (!content) return;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head><title>Fee Receipt</title><style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; color: #333; }
+      .receipt { max-width: 600px; margin: 0 auto; border: 2px solid #1a365d; padding: 30px; }
+      .header { text-align: center; border-bottom: 2px solid #1a365d; padding-bottom: 16px; margin-bottom: 20px; }
+      .header h1 { font-size: 22px; margin: 0 0 4px; color: #1a365d; }
+      .header p { margin: 0; font-size: 12px; color: #666; }
+      .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+      .row .label { color: #666; }
+      .row .value { font-weight: 600; }
+      .divider { border-top: 1px dashed #ccc; margin: 12px 0; }
+      .amount-box { background: #f0f4f8; padding: 16px; text-align: center; border-radius: 8px; margin-top: 16px; }
+      .amount-box .amt { font-size: 28px; font-weight: 700; color: #1a365d; }
+      .footer { text-align: center; margin-top: 20px; font-size: 11px; color: #999; }
+      @media print { body { padding: 0; } .receipt { border: none; } }
+    </style></head><body>${content.innerHTML}</body></html>`);
+    win.document.close();
+    setTimeout(() => { win.print(); win.close(); }, 300);
+  };
+
+  const handleWhatsApp = () => {
+    const msg = `📄 *Fee Receipt*
+${institutionName}
+Student: ${student.full_name || student.name}
+${structureLabel}
+Admission No: ${student.admission_number || '-'}
+Amount Paid: ₹${Number(fee.amount).toLocaleString('en-IN')}
+Date: ${fee.date}
+Thank you.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  return (
+    <div className="space-y-4">
+      <div ref={receiptRef}>
+        <div className="receipt">
+          <div className="header" style={{ textAlign: 'center', borderBottom: '2px solid hsl(var(--primary))', paddingBottom: '16px', marginBottom: '20px' }}>
+            <h1 style={{ fontSize: '20px', margin: '0 0 4px', color: 'hsl(var(--primary))' }}>{institutionName}</h1>
+            <p style={{ margin: 0, fontSize: '12px', color: 'hsl(var(--muted-foreground))' }}>Fee Receipt</p>
+          </div>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-muted-foreground">Student Name</span><span className="font-semibold">{student.full_name || student.name}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Course / Structure</span><span className="font-semibold">{structureLabel}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Admission No</span><span className="font-semibold font-mono">{student.admission_number || '-'}</span></div>
+            <div className="border-t border-dashed my-3" />
+            <div className="flex justify-between"><span className="text-muted-foreground">Payment Date</span><span className="font-semibold">{fee.date}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Transaction ID</span><span className="font-semibold font-mono text-xs">{fee.id?.slice(0, 8).toUpperCase()}</span></div>
+          </div>
+          <div className="mt-4 bg-secondary/50 rounded-lg p-4 text-center">
+            <p className="text-xs text-muted-foreground">Amount Paid</p>
+            <p className="text-3xl font-bold text-primary">₹{Number(fee.amount).toLocaleString('en-IN')}</p>
+          </div>
+          <p className="text-center text-xs text-muted-foreground mt-4">This is a computer-generated receipt.</p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button className="flex-1" onClick={handlePrint}><Printer className="h-4 w-4 mr-2" />Print Receipt</Button>
+        <Button variant="outline" className="flex-1" onClick={handleWhatsApp}><MessageCircle className="h-4 w-4 mr-2 text-green-600" />Share on WhatsApp</Button>
+      </div>
     </div>
   );
 }

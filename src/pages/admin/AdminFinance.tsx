@@ -170,6 +170,22 @@ export default function AdminFinance() {
     },
   });
 
+  const { data: allDiscounts = [] } = useQuery<{ student_id: string; amount: number }[]>({
+    queryKey: ['finance-discounts'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('discounts').select('student_id, amount');
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  const discountByStudent = useMemo(() => {
+    const map: Record<string, number> = {};
+    allDiscounts.forEach(d => { map[d.student_id] = (map[d.student_id] || 0) + Number(d.amount); });
+    return map;
+  }, [allDiscounts]);
+  const totalDiscounts = useMemo(() => allDiscounts.reduce((s, d) => s + Number(d.amount), 0), [allDiscounts]);
+
   // ─── EXTRACT UNIQUE YEARS FROM ALL DATA ───
   const availableYears = useMemo(() => {
     const yearSet = new Set<number>();
@@ -197,7 +213,10 @@ export default function AdminFinance() {
   const totalIncome = useMemo(() => filteredFees.reduce((s, f) => s + Number(f.amount), 0), [filteredFees]);
   const totalExpenses_val = useMemo(() => filteredExpenses.reduce((s, e) => s + Number(e.amount), 0), [filteredExpenses]);
   const totalSalariesPaid = useMemo(() => filteredSalaries.filter(s => s.status === 'paid').reduce((a, s) => a + Number(s.salary_amount), 0), [filteredSalaries]);
-  const totalPendingFees = useMemo(() => students.reduce((s, st) => s + Math.max(0, Number(st.total_fees) - Number(st.paid_fees)), 0), [students]);
+  const totalPendingFees = useMemo(() => students.reduce((s, st) => {
+    const disc = discountByStudent[st.id] || 0;
+    return s + Math.max(0, Number(st.total_fees) - Number(st.paid_fees) - disc);
+  }, 0), [students, discountByStudent]);
   const netBalance = totalIncome - totalExpenses_val - totalSalariesPaid;
 
   const overviewChartData = useMemo(() => {
@@ -297,7 +316,7 @@ export default function AdminFinance() {
               <StatCard title="Total Income" value={totalIncome} icon={<IndianRupee className="h-5 w-5" />} />
               <StatCard title="Total Expenses" value={totalExpenses_val + totalSalariesPaid} icon={<TrendingDown className="h-5 w-5" />} variant="destructive" subtitle="Expenses + Salaries" />
               <StatCard title="Net Balance" value={netBalance} icon={<Wallet className="h-5 w-5" />} variant={netBalance >= 0 ? 'success' : 'destructive'} />
-              <StatCard title="Pending Fees" value={totalPendingFees} icon={<AlertTriangle className="h-5 w-5" />} variant="warning" subtitle={`${students.filter(s => Number(s.total_fees) - Number(s.paid_fees) > 0).length} defaulters`} />
+              <StatCard title="Pending Fees" value={totalPendingFees} icon={<AlertTriangle className="h-5 w-5" />} variant="warning" subtitle={`${students.filter(s => Math.max(0, Number(s.total_fees) - Number(s.paid_fees) - (discountByStudent[s.id] || 0)) > 0).length} defaulters`} />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card>
@@ -364,7 +383,7 @@ export default function AdminFinance() {
 
           {/* ─── PENDING FEES TAB ─── */}
           <TabsContent value="pending">
-            <PendingFeesTab students={students} courses={activeCourses} />
+            <PendingFeesTab students={students} courses={activeCourses} discountByStudent={discountByStudent} />
           </TabsContent>
         </Tabs>
       </div>
@@ -890,7 +909,7 @@ function SalariesTab({ salaries, months6 }: { salaries: Salary[]; months6: { nam
 // ═══════════════════════════════════════════
 // PENDING FEES TAB
 // ═══════════════════════════════════════════
-function PendingFeesTab({ students, courses }: { students: Student[]; courses: { id: string; name: string }[] }) {
+function PendingFeesTab({ students, courses, discountByStudent = {} }: { students: Student[]; courses: { id: string; name: string }[]; discountByStudent?: Record<string, number> }) {
   const [search, setSearch] = useState('');
   const [courseFilter, setCourseFilter] = useState('all');
   const [sortKey, setSortKey] = useState('pending');
@@ -898,10 +917,13 @@ function PendingFeesTab({ students, courses }: { students: Student[]; courses: {
 
   const toggleSort = (k: string) => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('desc'); } };
 
-  const defaulters = useMemo(() => students.filter(s => Number(s.total_fees) - Number(s.paid_fees) > 0).map(s => ({
-    ...s,
-    pending: Number(s.total_fees) - Number(s.paid_fees),
-  })), [students]);
+  const defaulters = useMemo(() => students.filter(s => {
+    const disc = discountByStudent[s.id] || 0;
+    return Number(s.total_fees) - Number(s.paid_fees) - disc > 0;
+  }).map(s => {
+    const disc = discountByStudent[s.id] || 0;
+    return { ...s, pending: Number(s.total_fees) - Number(s.paid_fees) - disc, discount: disc };
+  }), [students, discountByStudent]);
 
   const totalPending = useMemo(() => defaulters.reduce((s, d) => s + d.pending, 0), [defaulters]);
 
