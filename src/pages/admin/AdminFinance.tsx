@@ -316,7 +316,7 @@ export default function AdminFinance() {
               <StatCard title="Total Income" value={totalIncome} icon={<IndianRupee className="h-5 w-5" />} />
               <StatCard title="Total Expenses" value={totalExpenses_val + totalSalariesPaid} icon={<TrendingDown className="h-5 w-5" />} variant="destructive" subtitle="Expenses + Salaries" />
               <StatCard title="Net Balance" value={netBalance} icon={<Wallet className="h-5 w-5" />} variant={netBalance >= 0 ? 'success' : 'destructive'} />
-              <StatCard title="Pending Fees" value={totalPendingFees} icon={<AlertTriangle className="h-5 w-5" />} variant="warning" subtitle={`${students.filter(s => Number(s.total_fees) - Number(s.paid_fees) > 0).length} defaulters`} />
+              <StatCard title="Pending Fees" value={totalPendingFees} icon={<AlertTriangle className="h-5 w-5" />} variant="warning" subtitle={`${students.filter(s => Math.max(0, Number(s.total_fees) - Number(s.paid_fees) - (discountByStudent[s.id] || 0)) > 0).length} defaulters`} />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card>
