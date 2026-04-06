@@ -213,7 +213,10 @@ export default function AdminFinance() {
   const totalIncome = useMemo(() => filteredFees.reduce((s, f) => s + Number(f.amount), 0), [filteredFees]);
   const totalExpenses_val = useMemo(() => filteredExpenses.reduce((s, e) => s + Number(e.amount), 0), [filteredExpenses]);
   const totalSalariesPaid = useMemo(() => filteredSalaries.filter(s => s.status === 'paid').reduce((a, s) => a + Number(s.salary_amount), 0), [filteredSalaries]);
-  const totalPendingFees = useMemo(() => students.reduce((s, st) => s + Math.max(0, Number(st.total_fees) - Number(st.paid_fees)), 0), [students]);
+  const totalPendingFees = useMemo(() => students.reduce((s, st) => {
+    const disc = discountByStudent[st.id] || 0;
+    return s + Math.max(0, Number(st.total_fees) - Number(st.paid_fees) - disc);
+  }, 0), [students, discountByStudent]);
   const netBalance = totalIncome - totalExpenses_val - totalSalariesPaid;
 
   const overviewChartData = useMemo(() => {
