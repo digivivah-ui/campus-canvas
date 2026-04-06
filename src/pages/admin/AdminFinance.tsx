@@ -909,7 +909,7 @@ function SalariesTab({ salaries, months6 }: { salaries: Salary[]; months6: { nam
 // ═══════════════════════════════════════════
 // PENDING FEES TAB
 // ═══════════════════════════════════════════
-function PendingFeesTab({ students, courses }: { students: Student[]; courses: { id: string; name: string }[] }) {
+function PendingFeesTab({ students, courses, discountByStudent = {} }: { students: Student[]; courses: { id: string; name: string }[]; discountByStudent?: Record<string, number> }) {
   const [search, setSearch] = useState('');
   const [courseFilter, setCourseFilter] = useState('all');
   const [sortKey, setSortKey] = useState('pending');
@@ -917,10 +917,13 @@ function PendingFeesTab({ students, courses }: { students: Student[]; courses: {
 
   const toggleSort = (k: string) => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('desc'); } };
 
-  const defaulters = useMemo(() => students.filter(s => Number(s.total_fees) - Number(s.paid_fees) > 0).map(s => ({
-    ...s,
-    pending: Number(s.total_fees) - Number(s.paid_fees),
-  })), [students]);
+  const defaulters = useMemo(() => students.filter(s => {
+    const disc = discountByStudent[s.id] || 0;
+    return Number(s.total_fees) - Number(s.paid_fees) - disc > 0;
+  }).map(s => {
+    const disc = discountByStudent[s.id] || 0;
+    return { ...s, pending: Number(s.total_fees) - Number(s.paid_fees) - disc, discount: disc };
+  }), [students, discountByStudent]);
 
   const totalPending = useMemo(() => defaulters.reduce((s, d) => s + d.pending, 0), [defaulters]);
 
