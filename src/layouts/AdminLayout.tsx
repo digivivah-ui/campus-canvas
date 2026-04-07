@@ -19,6 +19,7 @@ import {
     IndianRupee,
     PieChart,
     UserCheck,
+    AlertTriangle,
   } from 'lucide-react';
  import { useAuth } from '@/hooks/useAuth';
  import { Button } from '@/components/ui/button';
