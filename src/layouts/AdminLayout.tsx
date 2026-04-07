@@ -48,6 +48,7 @@ const navItems = [
   { href: '/admin/students', label: 'Students', icon: UserCheck },
   { href: '/admin/finance', label: 'Finance', icon: IndianRupee },
   { href: '/admin/analytics', label: 'Analytics', icon: PieChart },
+  { href: '/admin/defaulters', label: 'Defaulters', icon: AlertTriangle },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
 ];
  
