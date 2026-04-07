@@ -35,6 +35,7 @@ import AdminFinance from "./pages/admin/AdminFinance";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminCourseStructure from "./pages/admin/AdminCourseStructure";
 import AdminStudents from "./pages/admin/AdminStudents";
+import AdminDefaulters from "./pages/admin/AdminDefaulters";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => (
               <Route path="/admin/analytics" element={<AdminAnalytics />} />
               <Route path="/admin/course-structure" element={<AdminCourseStructure />} />
               <Route path="/admin/students" element={<AdminStudents />} />
+              <Route path="/admin/defaulters" element={<AdminDefaulters />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
               
               <Route path="*" element={<NotFound />} />
