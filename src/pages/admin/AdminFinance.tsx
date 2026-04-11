@@ -979,7 +979,7 @@ function PendingFeesTab({ students, courses, discountByStudent = {} }: { student
               <div>
                 <p className="text-sm text-muted-foreground">Number of Defaulters</p>
                 <p className="text-2xl font-bold text-destructive">{defaulters.length}</p>
-                <p className="text-xs text-muted-foreground mt-1">out of {instStudents.length} students</p>
+                <p className="text-xs text-muted-foreground mt-1">out of {students.length} students</p>
               </div>
               <div className="p-3 rounded-full bg-secondary text-destructive"><Users className="h-5 w-5" /></div>
             </div>
