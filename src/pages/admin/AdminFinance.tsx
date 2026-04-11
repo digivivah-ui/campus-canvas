@@ -397,7 +397,7 @@ export default function AdminFinance() {
 
           {/* ─── PENDING FEES TAB ─── */}
           <TabsContent value="pending">
-            <PendingFeesTab students={students} courses={activeCourses} discountByStudent={discountByStudent} />
+            <PendingFeesTab students={instStudents} courses={institutionType === 'college' ? collegeCourses : schoolCourses} discountByStudent={discountByStudent} />
           </TabsContent>
         </Tabs>
       </div>
