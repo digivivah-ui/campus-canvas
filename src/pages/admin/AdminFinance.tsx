@@ -204,15 +204,22 @@ export default function AdminFinance() {
     return years;
   }, [fees, expenses, salaries]);
 
+  // ─── INSTITUTION-FILTERED STUDENTS & FEES ───
+  const instStudents = useMemo(() => students.filter(s => s.course_id && institutionCourseIds.has(s.course_id)), [students, institutionCourseIds]);
+  const instStudentIds = useMemo(() => new Set(instStudents.map(s => s.id)), [instStudents]);
+
   // ─── FILTERED DATA ───
-  const filteredFees = useMemo(() => filterByTime(fees, timeFilter, 'date'), [fees, timeFilter]);
+  const filteredFees = useMemo(() => {
+    const timeFilt = filterByTime(fees, timeFilter, 'date');
+    return timeFilt.filter(f => !f.student_id || instStudentIds.has(f.student_id));
+  }, [fees, timeFilter, instStudentIds]);
   const filteredExpenses = useMemo(() => filterByTime(expenses, timeFilter, 'date'), [expenses, timeFilter]);
   const filteredSalaries = useMemo(() => filterByTime(salaries, timeFilter, 'payment_date'), [salaries, timeFilter]);
 
   // ─── CHART MONTHS (context-aware) ───
   const chartMonths = useMemo(() => {
     if (timeFilter.type === 'year') return getMonthsForYear(timeFilter.year);
-    if (timeFilter.type === 'month') return getMonthsForYear(timeFilter.year); // show full year context
+    if (timeFilter.type === 'month') return getMonthsForYear(timeFilter.year);
     return getLast6Months();
   }, [timeFilter]);
 
@@ -220,10 +227,10 @@ export default function AdminFinance() {
   const totalIncome = useMemo(() => filteredFees.reduce((s, f) => s + Number(f.amount), 0), [filteredFees]);
   const totalExpenses_val = useMemo(() => filteredExpenses.reduce((s, e) => s + Number(e.amount), 0), [filteredExpenses]);
   const totalSalariesPaid = useMemo(() => filteredSalaries.filter(s => s.status === 'paid').reduce((a, s) => a + Number(s.salary_amount), 0), [filteredSalaries]);
-  const totalPendingFees = useMemo(() => students.reduce((s, st) => {
+  const totalPendingFees = useMemo(() => instStudents.reduce((s, st) => {
     const disc = discountByStudent[st.id] || 0;
     return s + Math.max(0, Number(st.total_fees) - Number(st.paid_fees) - disc);
-  }, 0), [students, discountByStudent]);
+  }, 0), [instStudents, discountByStudent]);
   const netBalance = totalIncome - totalExpenses_val - totalSalariesPaid;
 
   const overviewChartData = useMemo(() => {
