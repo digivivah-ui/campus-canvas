@@ -78,7 +78,7 @@ function StatCard({ title, value, icon, subtitle, variant = 'default' }: { title
   );
 }
 
-type Fee = { id: string; amount: number; date: string; student_name: string | null; course: string | null; created_at: string };
+type Fee = { id: string; amount: number; date: string; student_name: string | null; student_id: string | null; course: string | null; created_at: string };
 type Expense = { id: string; title: string; amount: number; date: string; category: string; created_at: string };
 type Salary = { id: string; staff_name: string; designation: string | null; salary_amount: number; payment_date: string; status: string; created_at: string };
 type Student = { id: string; name: string; course: string; year: number; semester: number; total_fees: number; paid_fees: number; phone: string | null; course_id: string | null };
