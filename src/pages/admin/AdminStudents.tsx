@@ -370,11 +370,15 @@ Thank you.`;
               </CardContent></Card>
             </div>
 
-            {collegeCourses.length > 0 && (
+            {/* Courses for current institution type */}
+            {(institutionType === 'college' ? collegeCourses : schoolCourses).length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary" /> College Courses</h2>
+                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  {institutionType === 'college' ? <GraduationCap className="h-5 w-5 text-primary" /> : <School className="h-5 w-5 text-primary" />}
+                  {institutionType === 'college' ? 'College' : 'School'} Courses
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {collegeCourses.map(c => (
+                  {(institutionType === 'college' ? collegeCourses : schoolCourses).map(c => (
                     <Card key={c.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('course', c.id, c.name)}>
                       <CardContent className="p-4 flex items-center justify-between">
                         <div><p className="font-semibold text-sm">{c.name}</p><p className="text-xs text-muted-foreground">Click to view</p></div>
@@ -386,27 +390,11 @@ Thank you.`;
               </div>
             )}
 
-            {schoolCourses.length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><School className="h-5 w-5 text-primary" /> School Courses</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {schoolCourses.map(c => (
-                    <Card key={c.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('course', c.id, c.name)}>
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div><p className="font-semibold text-sm">{c.name}</p><p className="text-xs text-muted-foreground">Click to view</p></div>
-                        <div className="text-2xl font-bold text-primary">{analytics.byCourse[c.id] || 0}</div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {years.filter(y => y.is_active).length > 0 && (
+            {institutionType === 'college' && years.filter(y => y.is_active && institutionCourseIds.has(y.course_id)).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /> Year-wise Distribution</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {years.filter(y => y.is_active).map(y => (
+                  {years.filter(y => y.is_active && institutionCourseIds.has(y.course_id)).map(y => (
                     <Card key={y.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('year', y.id, `${y.name} (${getCourseName(y.course_id)})`)}>
                       <CardContent className="p-4 flex items-center justify-between">
                         <div><p className="font-semibold text-sm">{y.name}</p><p className="text-xs text-muted-foreground">{getCourseName(y.course_id)}</p></div>
@@ -418,11 +406,11 @@ Thank you.`;
               </div>
             )}
 
-            {classes.filter(cl => cl.is_active).length > 0 && (
+            {institutionType === 'school' && classes.filter(cl => cl.is_active && institutionCourseIds.has(cl.course_id)).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><School className="h-5 w-5 text-primary" /> Class-wise Distribution</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {classes.filter(cl => cl.is_active).map(cl => (
+                  {classes.filter(cl => cl.is_active && institutionCourseIds.has(cl.course_id)).map(cl => (
                     <Card key={cl.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('class', cl.id, `${cl.name} (${getCourseName(cl.course_id)})`)}>
                       <CardContent className="p-4 flex items-center justify-between">
                         <div><p className="font-semibold text-sm">{cl.name}</p><p className="text-xs text-muted-foreground">{getCourseName(cl.course_id)}</p></div>
@@ -434,11 +422,15 @@ Thank you.`;
               </div>
             )}
 
-            {semesters.filter(s => s.is_active).length > 0 && (
+            {institutionType === 'college' && semesters.filter(s => s.is_active).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Layers className="h-5 w-5 text-primary" /> Semester-wise Distribution</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {semesters.filter(s => s.is_active).map(s => {
+                  {semesters.filter(s => {
+                    if (!s.is_active) return false;
+                    const yr = years.find(y => y.id === s.year_id);
+                    return yr && institutionCourseIds.has(yr.course_id);
+                  }).map(s => {
                     const yr = years.find(y => y.id === s.year_id);
                     return (
                       <Card key={s.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('semester', s.id, `${s.name} – ${yr ? `${getCourseName(yr.course_id)} / ${yr.name}` : ''}`)}>
@@ -453,16 +445,28 @@ Thank you.`;
               </div>
             )}
 
-            {sections.filter(s => s.is_active).length > 0 && (
+            {institutionType === 'school' && sections.filter(s => s.is_active).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Layers className="h-5 w-5 text-primary" /> Section-wise Distribution</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {sections.filter(s => s.is_active).map(s => {
+                  {sections.filter(s => {
+                    if (!s.is_active) return false;
+                    const cl = classes.find(c => c.id === s.class_id);
+                    return cl && institutionCourseIds.has(cl.course_id);
+                  }).map(s => {
                     const cl = classes.find(c => c.id === s.class_id);
                     return (
                       <Card key={s.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('section', s.id, `${s.name} – ${cl ? `${getCourseName(cl.course_id)} / ${cl.name}` : ''}`)}>
                         <CardContent className="p-4 flex items-center justify-between">
                           <div><p className="font-semibold text-sm">{s.name}</p><p className="text-xs text-muted-foreground">{cl ? `${getCourseName(cl.course_id)} · ${cl.name}` : ''}</p></div>
+                          <div className="text-2xl font-bold text-primary">{analytics.bySection[s.id] || 0}</div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
                           <div className="text-2xl font-bold text-primary">{analytics.bySection[s.id] || 0}</div>
                         </CardContent>
                       </Card>
