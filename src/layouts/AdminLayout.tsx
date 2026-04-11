@@ -24,8 +24,11 @@ import {
  import { useAuth } from '@/hooks/useAuth';
  import { Button } from '@/components/ui/button';
  import { PageLoader } from '@/components/common/LoadingSpinner';
- import { cn } from '@/lib/utils';
- import { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { useState } from 'react';
+import { useInstitution } from '@/hooks/useInstitution';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { School } from 'lucide-react';
  
  interface AdminLayoutProps {
    children: ReactNode;
@@ -54,10 +57,11 @@ const navItems = [
 ];
  
  export function AdminLayout({ children }: AdminLayoutProps) {
-   const { user, isAdmin, isLoading, signOut } = useAuth();
-   const navigate = useNavigate();
-   const location = useLocation();
-   const [sidebarOpen, setSidebarOpen] = useState(false);
+    const { user, isAdmin, isLoading, signOut } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const { institutionType, setInstitutionType } = useInstitution();
  
    useEffect(() => {
      if (!isLoading && !user) {
@@ -88,18 +92,36 @@ const navItems = [
          )}
        >
          <div className="flex flex-col h-full">
-           {/* Logo */}
-           <div className="p-6 border-b border-primary-foreground/20">
-             <Link to="/" className="flex items-center gap-3">
-               <div className="bg-accent p-2 rounded-lg">
-                 <GraduationCap className="h-6 w-6 text-accent-foreground" />
-               </div>
-                <div>
-                  <h2 className="font-display font-bold text-primary-foreground">Admin Panel</h2>
-                  <p className="text-xs text-primary-foreground/60">MGCM, Ashta</p>
+            {/* Logo */}
+            <div className="p-6 border-b border-primary-foreground/20">
+              <Link to="/" className="flex items-center gap-3">
+                <div className="bg-accent p-2 rounded-lg">
+                  <GraduationCap className="h-6 w-6 text-accent-foreground" />
                 </div>
-             </Link>
-           </div>
+                 <div>
+                   <h2 className="font-display font-bold text-primary-foreground">Admin Panel</h2>
+                   <p className="text-xs text-primary-foreground/60">MGCM, Ashta</p>
+                 </div>
+              </Link>
+            </div>
+
+            {/* Institution Mode Toggle */}
+            <div className="px-4 py-3 border-b border-primary-foreground/20">
+              <p className="text-xs font-medium text-primary-foreground/60 mb-2 uppercase tracking-wider">Institution Mode</p>
+              <Select value={institutionType} onValueChange={(v) => setInstitutionType(v as 'college' | 'school')}>
+                <SelectTrigger className="bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="college">
+                    <span className="flex items-center gap-2"><GraduationCap className="h-4 w-4" /> College</span>
+                  </SelectItem>
+                  <SelectItem value="school">
+                    <span className="flex items-center gap-2"><School className="h-4 w-4" /> School</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
  
            {/* Navigation */}
            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">

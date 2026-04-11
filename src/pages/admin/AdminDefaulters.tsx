@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useInstitution } from '@/hooks/useInstitution';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,8 @@ export default function AdminDefaulters() {
     getCourseName, getYearName, getSemesterName, getClassName, getSectionName, getCourseType,
   } = useCourseStructure();
 
-  const [institutionFilter, setInstitutionFilter] = useState<string>('all');
+  const { institutionType } = useInstitution();
+  const institutionFilter = institutionType;
   const [filterCourse, setFilterCourse] = useState<string>('all');
   const [filterSub, setFilterSub] = useState<string>('all');
   const [filterSubSub, setFilterSubSub] = useState<string>('all');
@@ -68,9 +69,8 @@ export default function AdminDefaulters() {
 
   const filteredCourses = useMemo(() => {
     if (institutionFilter === 'college') return collegeCourses;
-    if (institutionFilter === 'school') return schoolCourses;
-    return courses.filter(c => c.is_active);
-  }, [institutionFilter, courses, collegeCourses, schoolCourses]);
+    return schoolCourses;
+  }, [institutionFilter, collegeCourses, schoolCourses]);
 
   const subItems = useMemo(() => {
     if (filterCourse === 'all') return [];
@@ -100,10 +100,8 @@ export default function AdminDefaulters() {
     list = list.filter(s => s.admission_date && new Date(s.admission_date).getFullYear() <= yr);
 
     // Institution
-    if (institutionFilter !== 'all') {
-      const courseIds = new Set((institutionFilter === 'college' ? collegeCourses : schoolCourses).map(c => c.id));
-      list = list.filter(s => s.course_id && courseIds.has(s.course_id));
-    }
+    const courseIds = new Set((institutionFilter === 'college' ? collegeCourses : schoolCourses).map(c => c.id));
+    list = list.filter(s => s.course_id && courseIds.has(s.course_id));
     if (filterCourse !== 'all') list = list.filter(s => s.course_id === filterCourse);
     if (filterSub !== 'all') {
       if (isSchoolContext) list = list.filter(s => s.class_id === filterSub);
@@ -179,11 +177,6 @@ export default function AdminDefaulters() {
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-3 items-center">
-              <ToggleGroup type="single" value={institutionFilter} onValueChange={v => { setInstitutionFilter(v || 'all'); setFilterCourse('all'); setFilterSub('all'); setFilterSubSub('all'); setPage(1); }} className="border rounded-lg p-1">
-                <ToggleGroupItem value="all" className="px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">All</ToggleGroupItem>
-                <ToggleGroupItem value="college" className="gap-1 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"><GraduationCap className="h-4 w-4" />College</ToggleGroupItem>
-                <ToggleGroupItem value="school" className="gap-1 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"><School className="h-4 w-4" />School</ToggleGroupItem>
-              </ToggleGroup>
               <Select value={filterCourse} onValueChange={v => { setFilterCourse(v); setFilterSub('all'); setFilterSubSub('all'); setPage(1); }}>
                 <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Courses" /></SelectTrigger>
                 <SelectContent>

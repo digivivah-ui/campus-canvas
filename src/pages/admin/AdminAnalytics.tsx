@@ -8,9 +8,9 @@ import { Users, GraduationCap, AlertTriangle, TrendingUp, School } from 'lucide-
 import { format, parseISO } from 'date-fns';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
 import { useState, useMemo } from 'react';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useInstitution } from '@/hooks/useInstitution';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', '#6366f1', '#f59e0b', '#10b981', '#ef4444'];
 
@@ -22,7 +22,8 @@ export default function AdminAnalytics() {
     getCourseName, getYearName, getClassName, getCourseType,
   } = useCourseStructure();
 
-  const [institutionFilter, setInstitutionFilter] = useState<string>('all');
+  const { institutionType } = useInstitution();
+  const institutionFilter = institutionType;
   const [filterCourse, setFilterCourse] = useState<string>('all');
   const [filterSub, setFilterSub] = useState<string>('all');
   const [academicYear, setAcademicYear] = useState<string>(String(new Date().getFullYear()));
@@ -70,9 +71,8 @@ export default function AdminAnalytics() {
 
   const filteredCourses = useMemo(() => {
     if (institutionFilter === 'college') return collegeCourses;
-    if (institutionFilter === 'school') return schoolCourses;
-    return courses.filter(c => c.is_active);
-  }, [institutionFilter, courses, collegeCourses, schoolCourses]);
+    return schoolCourses;
+  }, [institutionFilter, collegeCourses, schoolCourses]);
 
   const subItems = useMemo(() => {
     if (filterCourse === 'all') return [];
@@ -92,10 +92,8 @@ export default function AdminAnalytics() {
       return new Date(s.admission_date).getFullYear() <= yr;
     });
 
-    if (institutionFilter !== 'all') {
-      const courseIds = new Set((institutionFilter === 'college' ? collegeCourses : schoolCourses).map(c => c.id));
-      list = list.filter(s => s.course_id && courseIds.has(s.course_id));
-    }
+    const courseIds = new Set((institutionFilter === 'college' ? collegeCourses : schoolCourses).map(c => c.id));
+    list = list.filter(s => s.course_id && courseIds.has(s.course_id));
     if (filterCourse !== 'all') {
       list = list.filter(s => s.course_id === filterCourse);
     }
@@ -185,11 +183,6 @@ export default function AdminAnalytics() {
       <div className="space-y-6">
         {/* Filters */}
         <div className="flex flex-wrap gap-3 items-center">
-          <ToggleGroup type="single" value={institutionFilter} onValueChange={v => { setInstitutionFilter(v || 'all'); setFilterCourse('all'); setFilterSub('all'); }} className="border rounded-lg p-1">
-            <ToggleGroupItem value="all" className="px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">All</ToggleGroupItem>
-            <ToggleGroupItem value="college" className="gap-1 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"><GraduationCap className="h-4 w-4" />College</ToggleGroupItem>
-            <ToggleGroupItem value="school" className="gap-1 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"><School className="h-4 w-4" />School</ToggleGroupItem>
-          </ToggleGroup>
           <Select value={filterCourse} onValueChange={v => { setFilterCourse(v); setFilterSub('all'); }}>
             <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Courses" /></SelectTrigger>
             <SelectContent>
@@ -214,7 +207,7 @@ export default function AdminAnalytics() {
           </Select>
         </div>
 
-        <p className="text-sm text-muted-foreground">Showing: {institutionFilter === 'all' ? 'All Institutions' : institutionFilter === 'college' ? 'College' : 'School'} · {academicYear}</p>
+        <p className="text-sm text-muted-foreground">Showing: {institutionFilter === 'college' ? 'College' : 'School'} · {academicYear}</p>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

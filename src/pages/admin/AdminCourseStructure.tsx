@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Pencil, Trash2, ChevronRight, School, GraduationCap } from 'lucide-react';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useInstitution } from '@/hooks/useInstitution';
 
 type Course = { id: string; name: string; description: string | null; is_active: boolean; institution_type: string; created_at: string };
 type Year = { id: string; name: string; course_id: string; is_active: boolean; created_at: string };
@@ -24,7 +24,7 @@ type SectionItem = { id: string; name: string; class_id: string; is_active: bool
 export default function AdminCourseStructure() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [institutionType, setInstitutionType] = useState<string>('college');
+  const { institutionType } = useInstitution();
 
   const { data: courses = [] } = useQuery<Course[]>({
     queryKey: ['courses'],
@@ -82,14 +82,6 @@ export default function AdminCourseStructure() {
             <h1 className="text-2xl font-bold tracking-tight">Course Structure</h1>
             <p className="text-sm text-muted-foreground">Manage {institutionType === 'college' ? 'college courses, years & semesters' : 'school courses, classes & sections'}</p>
           </div>
-          <ToggleGroup type="single" value={institutionType} onValueChange={v => v && setInstitutionType(v)} className="border rounded-lg p-1">
-            <ToggleGroupItem value="college" className="gap-1.5 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground px-4">
-              <GraduationCap className="h-4 w-4" />College
-            </ToggleGroupItem>
-            <ToggleGroupItem value="school" className="gap-1.5 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground px-4">
-              <School className="h-4 w-4" />School
-            </ToggleGroupItem>
-          </ToggleGroup>
         </div>
 
         {/* Tree View */}
