@@ -177,11 +177,6 @@ export default function AdminDefaulters() {
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-3 items-center">
-              <ToggleGroup type="single" value={institutionFilter} onValueChange={v => { setInstitutionFilter(v || 'all'); setFilterCourse('all'); setFilterSub('all'); setFilterSubSub('all'); setPage(1); }} className="border rounded-lg p-1">
-                <ToggleGroupItem value="all" className="px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">All</ToggleGroupItem>
-                <ToggleGroupItem value="college" className="gap-1 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"><GraduationCap className="h-4 w-4" />College</ToggleGroupItem>
-                <ToggleGroupItem value="school" className="gap-1 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"><School className="h-4 w-4" />School</ToggleGroupItem>
-              </ToggleGroup>
               <Select value={filterCourse} onValueChange={v => { setFilterCourse(v); setFilterSub('all'); setFilterSubSub('all'); setPage(1); }}>
                 <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Courses" /></SelectTrigger>
                 <SelectContent>
