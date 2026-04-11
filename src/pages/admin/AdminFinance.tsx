@@ -382,7 +382,7 @@ export default function AdminFinance() {
 
           {/* ─── FEES TAB ─── */}
           <TabsContent value="fees">
-            <FeesTab fees={filteredFees} courses={activeCourses} months6={chartMonths} />
+            <FeesTab fees={filteredFees} courses={institutionType === 'college' ? collegeCourses : schoolCourses} months6={chartMonths} />
           </TabsContent>
 
           {/* ─── EXPENSES TAB ─── */}
