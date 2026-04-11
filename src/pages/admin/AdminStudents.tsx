@@ -169,7 +169,7 @@ export default function AdminStudents() {
     if (filterSection !== 'all') list = list.filter(s => s.section_id === filterSection);
     if (filterStatus !== 'all') list = list.filter(s => s.admission_status === filterStatus);
     return list;
-  }, [students, search, filterCourse, filterYear, filterSemester, filterClass, filterSection, filterStatus, activeFilter]);
+  }, [institutionStudents, search, filterCourse, filterYear, filterSemester, filterClass, filterSection, filterStatus, activeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
