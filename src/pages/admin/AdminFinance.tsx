@@ -130,7 +130,13 @@ function filterByTime<T extends Record<string, any>>(items: T[], filter: TimeFil
 
 export default function AdminFinance() {
   const now = new Date();
-  const { activeCourses } = useCourseStructure();
+  const { activeCourses, collegeCourses, schoolCourses } = useCourseStructure();
+  const { institutionType } = useInstitution();
+
+  const institutionCourseIds = useMemo(() => {
+    const relevant = institutionType === 'college' ? collegeCourses : schoolCourses;
+    return new Set(relevant.map(c => c.id));
+  }, [institutionType, collegeCourses, schoolCourses]);
 
   // ─── GLOBAL TIME FILTER STATE ───
   const [timeFilter, setTimeFilter] = useState<TimeFilter>({ type: 'all', year: now.getFullYear(), month: now.getMonth() });
