@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { Plus, Pencil, Search, Eye, Users, GraduationCap, UserPlus, ChevronLeft, ChevronRight, BookOpen, Calendar, Layers, ArrowLeft, X, School, Percent, Printer, Share2, MessageCircle } from 'lucide-react';
+import { useInstitution } from '@/hooks/useInstitution';
 
 type Student = {
   id: string; name: string; full_name: string | null; gender: string | null; date_of_birth: string | null;
@@ -48,6 +49,8 @@ export default function AdminStudents() {
     getYearsForCourse, getSemestersForYear, getClassesForCourse, getSectionsForClass,
     getCourseName, getYearName, getSemesterName, getClassName, getSectionName, getCourseType,
   } = useCourseStructure();
+
+  const { institutionType } = useInstitution();
 
   const [view, setView] = useState<'dashboard' | 'list'>('dashboard');
   const [activeFilter, setActiveFilter] = useState<FilterContext>(null);
@@ -114,10 +117,20 @@ export default function AdminStudents() {
     return map;
   }, [allDiscounts]);
 
+  // Filter students by global institution type
+  const institutionCourseIds = useMemo(() => {
+    const relevant = institutionType === 'college' ? collegeCourses : schoolCourses;
+    return new Set(relevant.map(c => c.id));
+  }, [institutionType, collegeCourses, schoolCourses]);
+
+  const institutionStudents = useMemo(() => {
+    return students.filter(s => s.course_id && institutionCourseIds.has(s.course_id));
+  }, [students, institutionCourseIds]);
+
   const analytics = useMemo(() => {
-    const total = students.length;
-    const active = students.filter(s => s.admission_status === 'active').length;
-    const totalPending = students.reduce((sum, s) => {
+    const total = institutionStudents.length;
+    const active = institutionStudents.filter(s => s.admission_status === 'active').length;
+    const totalPending = institutionStudents.reduce((sum, s) => {
       const disc = discountByStudent[s.id] || 0;
       return sum + Math.max(0, Number(s.total_fees) - Number(s.paid_fees) - disc);
     }, 0);
@@ -126,7 +139,7 @@ export default function AdminStudents() {
     const bySemester: Record<string, number> = {};
     const byClass: Record<string, number> = {};
     const bySection: Record<string, number> = {};
-    students.forEach(s => {
+    institutionStudents.forEach(s => {
       if (s.course_id) byCourse[s.course_id] = (byCourse[s.course_id] || 0) + 1;
       if (s.year_id) byYear[s.year_id] = (byYear[s.year_id] || 0) + 1;
       if (s.semester_id) bySemester[s.semester_id] = (bySemester[s.semester_id] || 0) + 1;
@@ -134,10 +147,10 @@ export default function AdminStudents() {
       if (s.section_id) bySection[s.section_id] = (bySection[s.section_id] || 0) + 1;
     });
     return { total, active, totalPending, byCourse, byYear, bySemester, byClass, bySection };
-  }, [students, discountByStudent]);
+  }, [institutionStudents, discountByStudent]);
 
   const filtered = useMemo(() => {
-    let list = students;
+    let list = institutionStudents;
     if (activeFilter) {
       if (activeFilter.type === 'course') list = list.filter(s => s.course_id === activeFilter.id);
       if (activeFilter.type === 'year') list = list.filter(s => s.year_id === activeFilter.id);
