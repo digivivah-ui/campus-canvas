@@ -18,6 +18,7 @@ import { Plus, Pencil, Trash2, IndianRupee, TrendingUp, TrendingDown, Wallet, Ci
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useInstitution } from '@/hooks/useInstitution';
 
 const PAGE_SIZE = 10;
 const PIE_COLORS = ['hsl(var(--primary))', 'hsl(0 84% 60%)', 'hsl(45 93% 47%)', 'hsl(142 76% 36%)', 'hsl(271 91% 65%)', 'hsl(199 89% 48%)', 'hsl(25 95% 53%)'];
@@ -77,7 +78,7 @@ function StatCard({ title, value, icon, subtitle, variant = 'default' }: { title
   );
 }
 
-type Fee = { id: string; amount: number; date: string; student_name: string | null; course: string | null; created_at: string };
+type Fee = { id: string; amount: number; date: string; student_name: string | null; student_id: string | null; course: string | null; created_at: string };
 type Expense = { id: string; title: string; amount: number; date: string; category: string; created_at: string };
 type Salary = { id: string; staff_name: string; designation: string | null; salary_amount: number; payment_date: string; status: string; created_at: string };
 type Student = { id: string; name: string; course: string; year: number; semester: number; total_fees: number; paid_fees: number; phone: string | null; course_id: string | null };
@@ -129,7 +130,13 @@ function filterByTime<T extends Record<string, any>>(items: T[], filter: TimeFil
 
 export default function AdminFinance() {
   const now = new Date();
-  const { activeCourses } = useCourseStructure();
+  const { activeCourses, collegeCourses, schoolCourses } = useCourseStructure();
+  const { institutionType } = useInstitution();
+
+  const institutionCourseIds = useMemo(() => {
+    const relevant = institutionType === 'college' ? collegeCourses : schoolCourses;
+    return new Set(relevant.map(c => c.id));
+  }, [institutionType, collegeCourses, schoolCourses]);
 
   // ─── GLOBAL TIME FILTER STATE ───
   const [timeFilter, setTimeFilter] = useState<TimeFilter>({ type: 'all', year: now.getFullYear(), month: now.getMonth() });
@@ -197,15 +204,22 @@ export default function AdminFinance() {
     return years;
   }, [fees, expenses, salaries]);
 
+  // ─── INSTITUTION-FILTERED STUDENTS & FEES ───
+  const instStudents = useMemo(() => students.filter(s => s.course_id && institutionCourseIds.has(s.course_id)), [students, institutionCourseIds]);
+  const instStudentIds = useMemo(() => new Set(instStudents.map(s => s.id)), [instStudents]);
+
   // ─── FILTERED DATA ───
-  const filteredFees = useMemo(() => filterByTime(fees, timeFilter, 'date'), [fees, timeFilter]);
+  const filteredFees = useMemo(() => {
+    const timeFilt = filterByTime(fees, timeFilter, 'date');
+    return timeFilt.filter(f => !f.student_id || instStudentIds.has(f.student_id));
+  }, [fees, timeFilter, instStudentIds]);
   const filteredExpenses = useMemo(() => filterByTime(expenses, timeFilter, 'date'), [expenses, timeFilter]);
   const filteredSalaries = useMemo(() => filterByTime(salaries, timeFilter, 'payment_date'), [salaries, timeFilter]);
 
   // ─── CHART MONTHS (context-aware) ───
   const chartMonths = useMemo(() => {
     if (timeFilter.type === 'year') return getMonthsForYear(timeFilter.year);
-    if (timeFilter.type === 'month') return getMonthsForYear(timeFilter.year); // show full year context
+    if (timeFilter.type === 'month') return getMonthsForYear(timeFilter.year);
     return getLast6Months();
   }, [timeFilter]);
 
@@ -213,10 +227,10 @@ export default function AdminFinance() {
   const totalIncome = useMemo(() => filteredFees.reduce((s, f) => s + Number(f.amount), 0), [filteredFees]);
   const totalExpenses_val = useMemo(() => filteredExpenses.reduce((s, e) => s + Number(e.amount), 0), [filteredExpenses]);
   const totalSalariesPaid = useMemo(() => filteredSalaries.filter(s => s.status === 'paid').reduce((a, s) => a + Number(s.salary_amount), 0), [filteredSalaries]);
-  const totalPendingFees = useMemo(() => students.reduce((s, st) => {
+  const totalPendingFees = useMemo(() => instStudents.reduce((s, st) => {
     const disc = discountByStudent[st.id] || 0;
     return s + Math.max(0, Number(st.total_fees) - Number(st.paid_fees) - disc);
-  }, 0), [students, discountByStudent]);
+  }, 0), [instStudents, discountByStudent]);
   const netBalance = totalIncome - totalExpenses_val - totalSalariesPaid;
 
   const overviewChartData = useMemo(() => {
@@ -316,7 +330,7 @@ export default function AdminFinance() {
               <StatCard title="Total Income" value={totalIncome} icon={<IndianRupee className="h-5 w-5" />} />
               <StatCard title="Total Expenses" value={totalExpenses_val + totalSalariesPaid} icon={<TrendingDown className="h-5 w-5" />} variant="destructive" subtitle="Expenses + Salaries" />
               <StatCard title="Net Balance" value={netBalance} icon={<Wallet className="h-5 w-5" />} variant={netBalance >= 0 ? 'success' : 'destructive'} />
-              <StatCard title="Pending Fees" value={totalPendingFees} icon={<AlertTriangle className="h-5 w-5" />} variant="warning" subtitle={`${students.filter(s => Math.max(0, Number(s.total_fees) - Number(s.paid_fees) - (discountByStudent[s.id] || 0)) > 0).length} defaulters`} />
+              <StatCard title="Pending Fees" value={totalPendingFees} icon={<AlertTriangle className="h-5 w-5" />} variant="warning" subtitle={`${instStudents.filter(s => Math.max(0, Number(s.total_fees) - Number(s.paid_fees) - (discountByStudent[s.id] || 0)) > 0).length} defaulters`} />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card>
@@ -368,7 +382,7 @@ export default function AdminFinance() {
 
           {/* ─── FEES TAB ─── */}
           <TabsContent value="fees">
-            <FeesTab fees={filteredFees} courses={activeCourses} months6={chartMonths} />
+            <FeesTab fees={filteredFees} courses={institutionType === 'college' ? collegeCourses : schoolCourses} months6={chartMonths} />
           </TabsContent>
 
           {/* ─── EXPENSES TAB ─── */}
@@ -383,7 +397,7 @@ export default function AdminFinance() {
 
           {/* ─── PENDING FEES TAB ─── */}
           <TabsContent value="pending">
-            <PendingFeesTab students={students} courses={activeCourses} discountByStudent={discountByStudent} />
+            <PendingFeesTab students={instStudents} courses={institutionType === 'college' ? collegeCourses : schoolCourses} discountByStudent={discountByStudent} />
           </TabsContent>
         </Tabs>
       </div>

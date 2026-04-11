@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { Plus, Pencil, Search, Eye, Users, GraduationCap, UserPlus, ChevronLeft, ChevronRight, BookOpen, Calendar, Layers, ArrowLeft, X, School, Percent, Printer, Share2, MessageCircle } from 'lucide-react';
+import { useInstitution } from '@/hooks/useInstitution';
 
 type Student = {
   id: string; name: string; full_name: string | null; gender: string | null; date_of_birth: string | null;
@@ -48,6 +49,8 @@ export default function AdminStudents() {
     getYearsForCourse, getSemestersForYear, getClassesForCourse, getSectionsForClass,
     getCourseName, getYearName, getSemesterName, getClassName, getSectionName, getCourseType,
   } = useCourseStructure();
+
+  const { institutionType } = useInstitution();
 
   const [view, setView] = useState<'dashboard' | 'list'>('dashboard');
   const [activeFilter, setActiveFilter] = useState<FilterContext>(null);
@@ -114,10 +117,20 @@ export default function AdminStudents() {
     return map;
   }, [allDiscounts]);
 
+  // Filter students by global institution type
+  const institutionCourseIds = useMemo(() => {
+    const relevant = institutionType === 'college' ? collegeCourses : schoolCourses;
+    return new Set(relevant.map(c => c.id));
+  }, [institutionType, collegeCourses, schoolCourses]);
+
+  const institutionStudents = useMemo(() => {
+    return students.filter(s => s.course_id && institutionCourseIds.has(s.course_id));
+  }, [students, institutionCourseIds]);
+
   const analytics = useMemo(() => {
-    const total = students.length;
-    const active = students.filter(s => s.admission_status === 'active').length;
-    const totalPending = students.reduce((sum, s) => {
+    const total = institutionStudents.length;
+    const active = institutionStudents.filter(s => s.admission_status === 'active').length;
+    const totalPending = institutionStudents.reduce((sum, s) => {
       const disc = discountByStudent[s.id] || 0;
       return sum + Math.max(0, Number(s.total_fees) - Number(s.paid_fees) - disc);
     }, 0);
@@ -126,7 +139,7 @@ export default function AdminStudents() {
     const bySemester: Record<string, number> = {};
     const byClass: Record<string, number> = {};
     const bySection: Record<string, number> = {};
-    students.forEach(s => {
+    institutionStudents.forEach(s => {
       if (s.course_id) byCourse[s.course_id] = (byCourse[s.course_id] || 0) + 1;
       if (s.year_id) byYear[s.year_id] = (byYear[s.year_id] || 0) + 1;
       if (s.semester_id) bySemester[s.semester_id] = (bySemester[s.semester_id] || 0) + 1;
@@ -134,10 +147,10 @@ export default function AdminStudents() {
       if (s.section_id) bySection[s.section_id] = (bySection[s.section_id] || 0) + 1;
     });
     return { total, active, totalPending, byCourse, byYear, bySemester, byClass, bySection };
-  }, [students, discountByStudent]);
+  }, [institutionStudents, discountByStudent]);
 
   const filtered = useMemo(() => {
-    let list = students;
+    let list = institutionStudents;
     if (activeFilter) {
       if (activeFilter.type === 'course') list = list.filter(s => s.course_id === activeFilter.id);
       if (activeFilter.type === 'year') list = list.filter(s => s.year_id === activeFilter.id);
@@ -156,7 +169,7 @@ export default function AdminStudents() {
     if (filterSection !== 'all') list = list.filter(s => s.section_id === filterSection);
     if (filterStatus !== 'all') list = list.filter(s => s.admission_status === filterStatus);
     return list;
-  }, [students, search, filterCourse, filterYear, filterSemester, filterClass, filterSection, filterStatus, activeFilter]);
+  }, [institutionStudents, search, filterCourse, filterYear, filterSemester, filterClass, filterSection, filterStatus, activeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -357,11 +370,15 @@ Thank you.`;
               </CardContent></Card>
             </div>
 
-            {collegeCourses.length > 0 && (
+            {/* Courses for current institution type */}
+            {(institutionType === 'college' ? collegeCourses : schoolCourses).length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary" /> College Courses</h2>
+                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  {institutionType === 'college' ? <GraduationCap className="h-5 w-5 text-primary" /> : <School className="h-5 w-5 text-primary" />}
+                  {institutionType === 'college' ? 'College' : 'School'} Courses
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {collegeCourses.map(c => (
+                  {(institutionType === 'college' ? collegeCourses : schoolCourses).map(c => (
                     <Card key={c.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('course', c.id, c.name)}>
                       <CardContent className="p-4 flex items-center justify-between">
                         <div><p className="font-semibold text-sm">{c.name}</p><p className="text-xs text-muted-foreground">Click to view</p></div>
@@ -373,27 +390,11 @@ Thank you.`;
               </div>
             )}
 
-            {schoolCourses.length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><School className="h-5 w-5 text-primary" /> School Courses</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {schoolCourses.map(c => (
-                    <Card key={c.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('course', c.id, c.name)}>
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div><p className="font-semibold text-sm">{c.name}</p><p className="text-xs text-muted-foreground">Click to view</p></div>
-                        <div className="text-2xl font-bold text-primary">{analytics.byCourse[c.id] || 0}</div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {years.filter(y => y.is_active).length > 0 && (
+            {institutionType === 'college' && years.filter(y => y.is_active && institutionCourseIds.has(y.course_id)).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /> Year-wise Distribution</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {years.filter(y => y.is_active).map(y => (
+                  {years.filter(y => y.is_active && institutionCourseIds.has(y.course_id)).map(y => (
                     <Card key={y.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('year', y.id, `${y.name} (${getCourseName(y.course_id)})`)}>
                       <CardContent className="p-4 flex items-center justify-between">
                         <div><p className="font-semibold text-sm">{y.name}</p><p className="text-xs text-muted-foreground">{getCourseName(y.course_id)}</p></div>
@@ -405,11 +406,11 @@ Thank you.`;
               </div>
             )}
 
-            {classes.filter(cl => cl.is_active).length > 0 && (
+            {institutionType === 'school' && classes.filter(cl => cl.is_active && institutionCourseIds.has(cl.course_id)).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><School className="h-5 w-5 text-primary" /> Class-wise Distribution</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {classes.filter(cl => cl.is_active).map(cl => (
+                  {classes.filter(cl => cl.is_active && institutionCourseIds.has(cl.course_id)).map(cl => (
                     <Card key={cl.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('class', cl.id, `${cl.name} (${getCourseName(cl.course_id)})`)}>
                       <CardContent className="p-4 flex items-center justify-between">
                         <div><p className="font-semibold text-sm">{cl.name}</p><p className="text-xs text-muted-foreground">{getCourseName(cl.course_id)}</p></div>
@@ -421,11 +422,15 @@ Thank you.`;
               </div>
             )}
 
-            {semesters.filter(s => s.is_active).length > 0 && (
+            {institutionType === 'college' && semesters.filter(s => s.is_active).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Layers className="h-5 w-5 text-primary" /> Semester-wise Distribution</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {semesters.filter(s => s.is_active).map(s => {
+                  {semesters.filter(s => {
+                    if (!s.is_active) return false;
+                    const yr = years.find(y => y.id === s.year_id);
+                    return yr && institutionCourseIds.has(yr.course_id);
+                  }).map(s => {
                     const yr = years.find(y => y.id === s.year_id);
                     return (
                       <Card key={s.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('semester', s.id, `${s.name} – ${yr ? `${getCourseName(yr.course_id)} / ${yr.name}` : ''}`)}>
@@ -440,11 +445,15 @@ Thank you.`;
               </div>
             )}
 
-            {sections.filter(s => s.is_active).length > 0 && (
+            {institutionType === 'school' && sections.filter(s => s.is_active).length > 0 && (
               <div>
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Layers className="h-5 w-5 text-primary" /> Section-wise Distribution</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {sections.filter(s => s.is_active).map(s => {
+                  {sections.filter(s => {
+                    if (!s.is_active) return false;
+                    const cl = classes.find(c => c.id === s.class_id);
+                    return cl && institutionCourseIds.has(cl.course_id);
+                  }).map(s => {
                     const cl = classes.find(c => c.id === s.class_id);
                     return (
                       <Card key={s.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('section', s.id, `${s.name} – ${cl ? `${getCourseName(cl.course_id)} / ${cl.name}` : ''}`)}>
@@ -483,7 +492,7 @@ Thank you.`;
                 <SelectTrigger className="w-[160px]"><SelectValue placeholder="Course" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Courses</SelectItem>
-                  {activeCourses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {(institutionType === 'college' ? collegeCourses : schoolCourses).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
               {filterCourse !== 'all' && selectedCourseType === 'college' && (
