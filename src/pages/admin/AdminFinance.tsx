@@ -931,13 +931,13 @@ function PendingFeesTab({ students, courses, discountByStudent = {} }: { student
 
   const toggleSort = (k: string) => { if (sortKey === k) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortKey(k); setSortDir('desc'); } };
 
-  const defaulters = useMemo(() => students.filter(s => {
+  const defaulters = useMemo(() => instStudents.filter(s => {
     const disc = discountByStudent[s.id] || 0;
     return Number(s.total_fees) - Number(s.paid_fees) - disc > 0;
   }).map(s => {
     const disc = discountByStudent[s.id] || 0;
     return { ...s, pending: Number(s.total_fees) - Number(s.paid_fees) - disc, discount: disc };
-  }), [students, discountByStudent]);
+  }), [instStudents, discountByStudent]);
 
   const totalPending = useMemo(() => defaulters.reduce((s, d) => s + d.pending, 0), [defaulters]);
 
