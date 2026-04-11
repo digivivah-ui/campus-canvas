@@ -18,6 +18,7 @@ import { Plus, Pencil, Trash2, IndianRupee, TrendingUp, TrendingDown, Wallet, Ci
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useInstitution } from '@/hooks/useInstitution';
 
 const PAGE_SIZE = 10;
 const PIE_COLORS = ['hsl(var(--primary))', 'hsl(0 84% 60%)', 'hsl(45 93% 47%)', 'hsl(142 76% 36%)', 'hsl(271 91% 65%)', 'hsl(199 89% 48%)', 'hsl(25 95% 53%)'];

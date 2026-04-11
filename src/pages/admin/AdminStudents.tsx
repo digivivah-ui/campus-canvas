@@ -492,7 +492,7 @@ Thank you.`;
                 <SelectTrigger className="w-[160px]"><SelectValue placeholder="Course" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Courses</SelectItem>
-                  {activeCourses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {(institutionType === 'college' ? collegeCourses : schoolCourses).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
               {filterCourse !== 'all' && selectedCourseType === 'college' && (
