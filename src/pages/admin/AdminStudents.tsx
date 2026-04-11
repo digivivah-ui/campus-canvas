@@ -467,14 +467,6 @@ Thank you.`;
                 </div>
               </div>
             )}
-                          <div className="text-2xl font-bold text-primary">{analytics.bySection[s.id] || 0}</div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
