@@ -37,7 +37,7 @@ const emptyForm = {
   total_fees: '', paid_fees: '0', admission_status: 'active',
 };
 
-type FilterContext = { type: 'course' | 'year' | 'semester' | 'class' | 'section'; id: string; label: string } | null;
+
 
 export default function AdminStudents() {
   const { toast } = useToast();
@@ -52,7 +52,6 @@ export default function AdminStudents() {
 
   const { institutionType } = useInstitution();
 
-  const [search, setSearch] = useState('');
   const [search, setSearch] = useState('');
   const [filterCourse, setFilterCourse] = useState('all');
   const [filterYear, setFilterYear] = useState('all');
@@ -150,13 +149,6 @@ export default function AdminStudents() {
 
   const filtered = useMemo(() => {
     let list = institutionStudents;
-    if (activeFilter) {
-      if (activeFilter.type === 'course') list = list.filter(s => s.course_id === activeFilter.id);
-      if (activeFilter.type === 'year') list = list.filter(s => s.year_id === activeFilter.id);
-      if (activeFilter.type === 'semester') list = list.filter(s => s.semester_id === activeFilter.id);
-      if (activeFilter.type === 'class') list = list.filter(s => s.class_id === activeFilter.id);
-      if (activeFilter.type === 'section') list = list.filter(s => s.section_id === activeFilter.id);
-    }
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(s => (s.full_name || s.name || '').toLowerCase().includes(q) || (s.phone || '').includes(q) || (s.admission_number || '').toLowerCase().includes(q));
@@ -168,31 +160,7 @@ export default function AdminStudents() {
     if (filterSection !== 'all') list = list.filter(s => s.section_id === filterSection);
     if (filterStatus !== 'all') list = list.filter(s => s.admission_status === filterStatus);
     return list;
-  }, [institutionStudents, search, filterCourse, filterYear, filterSemester, filterClass, filterSection, filterStatus, activeFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-
-  const filterYearsArr = filterCourse !== 'all' ? getYearsForCourse(filterCourse) : [];
-  const filterSemestersArr = filterYear !== 'all' ? getSemestersForYear(filterYear) : [];
-  const filterClassesArr = filterCourse !== 'all' ? getClassesForCourse(filterCourse) : [];
-  const filterSectionsArr = filterClass !== 'all' ? getSectionsForClass(filterClass) : [];
-
-  const handleCardClick = (type: FilterContext['type'], id: string, label: string) => {
-    setActiveFilter({ type: type!, id, label });
-    setSearch(''); setFilterCourse('all'); setFilterYear('all'); setFilterSemester('all');
-    setFilterClass('all'); setFilterSection('all'); setFilterStatus('all'); setPage(1); setView('list');
-  };
-
-  const handleShowAllStudents = () => {
-    setActiveFilter(null); setSearch(''); setFilterCourse('all'); setFilterYear('all'); setFilterSemester('all');
-    setFilterClass('all'); setFilterSection('all'); setFilterStatus('all'); setPage(1); setView('list');
-  };
-
-  const handleBackToDashboard = () => {
-    setView('dashboard'); setActiveFilter(null); setSearch(''); setFilterCourse('all'); setFilterYear('all');
-    setFilterSemester('all'); setFilterClass('all'); setFilterSection('all'); setFilterStatus('all'); setPage(1);
-  };
+  }, [institutionStudents, search, filterCourse, filterYear, filterSemester, filterClass, filterSection, filterStatus]);
 
   const generateAdmissionNumber = async (): Promise<string> => {
     const { data, error } = await supabase.rpc('generate_admission_number');
