@@ -37,8 +37,6 @@ const emptyForm = {
   total_fees: '', paid_fees: '0', admission_status: 'active',
 };
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
 export default function AdminStudents() {
   const { toast } = useToast();
