@@ -161,6 +161,10 @@ export default function AdminStudents() {
     return list;
   }, [institutionStudents, search, filterCourse, filterYear, filterSemester, filterClass, filterSection, filterStatus]);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+
   const generateAdmissionNumber = async (): Promise<string> => {
     const { data, error } = await supabase.rpc('generate_admission_number');
     if (error) throw error;
