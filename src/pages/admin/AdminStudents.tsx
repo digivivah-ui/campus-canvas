@@ -52,8 +52,7 @@ export default function AdminStudents() {
 
   const { institutionType } = useInstitution();
 
-  const [view, setView] = useState<'dashboard' | 'list'>('dashboard');
-  const [activeFilter, setActiveFilter] = useState<FilterContext>(null);
+  const [search, setSearch] = useState('');
   const [search, setSearch] = useState('');
   const [filterCourse, setFilterCourse] = useState('all');
   const [filterYear, setFilterYear] = useState('all');
