@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
-import { Plus, Pencil, Search, Eye, Users, GraduationCap, UserPlus, ChevronLeft, ChevronRight, BookOpen, Calendar, Layers, ArrowLeft, X, School, Percent, Printer, Share2, MessageCircle } from 'lucide-react';
+import { Plus, Pencil, Search, Eye, Users, GraduationCap, UserPlus, ChevronLeft, ChevronRight, Layers, School, Percent, Printer, MessageCircle } from 'lucide-react';
 import { useInstitution } from '@/hooks/useInstitution';
 
 type Student = {
