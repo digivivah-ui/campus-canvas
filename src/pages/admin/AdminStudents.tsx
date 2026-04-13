@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
-import { Plus, Pencil, Search, Eye, Users, GraduationCap, UserPlus, ChevronLeft, ChevronRight, BookOpen, Calendar, Layers, ArrowLeft, X, School, Percent, Printer, Share2, MessageCircle } from 'lucide-react';
+import { Plus, Pencil, Search, Eye, Users, GraduationCap, UserPlus, ChevronLeft, ChevronRight, Layers, School, Percent, Printer, MessageCircle } from 'lucide-react';
 import { useInstitution } from '@/hooks/useInstitution';
 
 type Student = {
@@ -37,7 +37,6 @@ const emptyForm = {
   total_fees: '', paid_fees: '0', admission_status: 'active',
 };
 
-type FilterContext = { type: 'course' | 'year' | 'semester' | 'class' | 'section'; id: string; label: string } | null;
 
 export default function AdminStudents() {
   const { toast } = useToast();
@@ -52,8 +51,6 @@ export default function AdminStudents() {
 
   const { institutionType } = useInstitution();
 
-  const [view, setView] = useState<'dashboard' | 'list'>('dashboard');
-  const [activeFilter, setActiveFilter] = useState<FilterContext>(null);
   const [search, setSearch] = useState('');
   const [filterCourse, setFilterCourse] = useState('all');
   const [filterYear, setFilterYear] = useState('all');
@@ -151,13 +148,6 @@ export default function AdminStudents() {
 
   const filtered = useMemo(() => {
     let list = institutionStudents;
-    if (activeFilter) {
-      if (activeFilter.type === 'course') list = list.filter(s => s.course_id === activeFilter.id);
-      if (activeFilter.type === 'year') list = list.filter(s => s.year_id === activeFilter.id);
-      if (activeFilter.type === 'semester') list = list.filter(s => s.semester_id === activeFilter.id);
-      if (activeFilter.type === 'class') list = list.filter(s => s.class_id === activeFilter.id);
-      if (activeFilter.type === 'section') list = list.filter(s => s.section_id === activeFilter.id);
-    }
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(s => (s.full_name || s.name || '').toLowerCase().includes(q) || (s.phone || '').includes(q) || (s.admission_number || '').toLowerCase().includes(q));
@@ -169,31 +159,11 @@ export default function AdminStudents() {
     if (filterSection !== 'all') list = list.filter(s => s.section_id === filterSection);
     if (filterStatus !== 'all') list = list.filter(s => s.admission_status === filterStatus);
     return list;
-  }, [institutionStudents, search, filterCourse, filterYear, filterSemester, filterClass, filterSection, filterStatus, activeFilter]);
+  }, [institutionStudents, search, filterCourse, filterYear, filterSemester, filterClass, filterSection, filterStatus]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  const filterYearsArr = filterCourse !== 'all' ? getYearsForCourse(filterCourse) : [];
-  const filterSemestersArr = filterYear !== 'all' ? getSemestersForYear(filterYear) : [];
-  const filterClassesArr = filterCourse !== 'all' ? getClassesForCourse(filterCourse) : [];
-  const filterSectionsArr = filterClass !== 'all' ? getSectionsForClass(filterClass) : [];
-
-  const handleCardClick = (type: FilterContext['type'], id: string, label: string) => {
-    setActiveFilter({ type: type!, id, label });
-    setSearch(''); setFilterCourse('all'); setFilterYear('all'); setFilterSemester('all');
-    setFilterClass('all'); setFilterSection('all'); setFilterStatus('all'); setPage(1); setView('list');
-  };
-
-  const handleShowAllStudents = () => {
-    setActiveFilter(null); setSearch(''); setFilterCourse('all'); setFilterYear('all'); setFilterSemester('all');
-    setFilterClass('all'); setFilterSection('all'); setFilterStatus('all'); setPage(1); setView('list');
-  };
-
-  const handleBackToDashboard = () => {
-    setView('dashboard'); setActiveFilter(null); setSearch(''); setFilterCourse('all'); setFilterYear('all');
-    setFilterSemester('all'); setFilterClass('all'); setFilterSection('all'); setFilterStatus('all'); setPage(1);
-  };
 
   const generateAdmissionNumber = async (): Promise<string> => {
     const { data, error } = await supabase.rpc('generate_admission_number');
@@ -332,267 +302,336 @@ Thank you.`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
+  // School: get all classes and sections for current institution
+  const instClasses = useMemo(() => {
+    return classes.filter(cl => cl.is_active && institutionCourseIds.has(cl.course_id))
+      .sort((a, b) => {
+        const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+        const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+        return numA - numB;
+      });
+  }, [classes, institutionCourseIds]);
+
+  const instYears = useMemo(() => {
+    return years.filter(y => y.is_active && institutionCourseIds.has(y.course_id));
+  }, [years, institutionCourseIds]);
+
+  const instSemesters = useMemo(() => {
+    return semesters.filter(s => {
+      if (!s.is_active) return false;
+      const yr = years.find(y => y.id === s.year_id);
+      return yr && institutionCourseIds.has(yr.course_id);
+    });
+  }, [semesters, years, institutionCourseIds]);
+
+  const instSections = useMemo(() => {
+    const classIds = new Set(instClasses.map(c => c.id));
+    return sections.filter(s => s.is_active && classIds.has(s.class_id));
+  }, [sections, instClasses]);
+
+  // Sections for selected class
+  const selectedClassSections = useMemo(() => {
+    if (filterClass === 'all') return [];
+    return instSections.filter(s => s.class_id === filterClass);
+  }, [filterClass, instSections]);
+
+  // Semesters for selected year
+  const selectedYearSemesters = useMemo(() => {
+    if (filterYear === 'all') return [];
+    return instSemesters.filter(s => s.year_id === filterYear);
+  }, [filterYear, instSemesters]);
+
+  // Distribution data
+  const classDistribution = useMemo(() => {
+    return instClasses.map(cl => ({
+      ...cl,
+      count: institutionStudents.filter(s => s.class_id === cl.id).length,
+    }));
+  }, [instClasses, institutionStudents]);
+
+  const sectionDistribution = useMemo(() => {
+    if (filterClass === 'all') return [];
+    return selectedClassSections.map(s => ({
+      ...s,
+      count: institutionStudents.filter(st => st.section_id === s.id).length,
+    }));
+  }, [filterClass, selectedClassSections, institutionStudents]);
+
+  const yearDistribution = useMemo(() => {
+    return instYears.map(y => ({
+      ...y,
+      count: institutionStudents.filter(s => s.year_id === y.id).length,
+    }));
+  }, [instYears, institutionStudents]);
+
+  const semesterDistribution = useMemo(() => {
+    if (filterYear === 'all') return [];
+    return selectedYearSemesters.map(s => ({
+      ...s,
+      count: institutionStudents.filter(st => st.semester_id === s.id).length,
+    }));
+  }, [filterYear, selectedYearSemesters, institutionStudents]);
+
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
+        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            {view === 'list' && <Button variant="ghost" size="icon" onClick={handleBackToDashboard}><ArrowLeft className="h-5 w-5" /></Button>}
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Students</h1>
-              <p className="text-sm text-muted-foreground">{view === 'dashboard' ? 'Overview & analytics' : activeFilter ? `Showing: ${activeFilter.label}` : 'All students'}</p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Students</h1>
+            <p className="text-sm text-muted-foreground">
+              {institutionType === 'college' ? 'College' : 'School'} · {filtered.length} students
+            </p>
           </div>
           <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" />New Admission</Button>
         </div>
 
-        {/* DASHBOARD VIEW */}
-        {view === 'dashboard' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20" onClick={handleShowAllStudents}>
-                <CardContent className="flex items-center gap-4 p-5">
-                  <div className="p-3 rounded-xl bg-primary/10 text-primary"><Users className="h-6 w-6" /></div>
-                  <div><p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Students</p><p className="text-2xl font-bold">{analytics.total}</p></div>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card>
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="p-2.5 rounded-lg bg-primary/10 text-primary"><Users className="h-5 w-5" /></div>
+              <div><p className="text-xs text-muted-foreground">Total</p><p className="text-xl font-bold">{analytics.total}</p></div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="p-2.5 rounded-lg bg-green-500/10 text-green-600"><GraduationCap className="h-5 w-5" /></div>
+              <div><p className="text-xs text-muted-foreground">Active</p><p className="text-xl font-bold">{analytics.active}</p></div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="p-2.5 rounded-lg bg-orange-500/10 text-orange-600"><UserPlus className="h-5 w-5" /></div>
+              <div><p className="text-xs text-muted-foreground">Inactive</p><p className="text-xl font-bold">{analytics.total - analytics.active}</p></div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="p-2.5 rounded-lg bg-destructive/10 text-destructive"><Layers className="h-5 w-5" /></div>
+              <div><p className="text-xs text-muted-foreground">Pending</p><p className="text-xl font-bold">₹{analytics.totalPending.toLocaleString('en-IN')}</p></div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filter Toggles */}
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            {institutionType === 'school' && (
+              <>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Class</p>
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                    <Button
+                      variant={filterClass === 'all' ? 'default' : 'outline'}
+                      size="sm"
+                      className="shrink-0 text-xs h-8"
+                      onClick={() => { setFilterClass('all'); setFilterSection('all'); setPage(1); }}
+                    >
+                      All ({institutionStudents.length})
+                    </Button>
+                    {classDistribution.map(cl => (
+                      <Button
+                        key={cl.id}
+                        variant={filterClass === cl.id ? 'default' : 'outline'}
+                        size="sm"
+                        className="shrink-0 text-xs h-8"
+                        onClick={() => { setFilterClass(cl.id); setFilterSection('all'); setPage(1); }}
+                      >
+                        {cl.name} ({cl.count})
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                {filterClass !== 'all' && selectedClassSections.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Section</p>
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                      <Button
+                        variant={filterSection === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        className="shrink-0 text-xs h-8"
+                        onClick={() => { setFilterSection('all'); setPage(1); }}
+                      >
+                        All ({institutionStudents.filter(s => s.class_id === filterClass).length})
+                      </Button>
+                      {sectionDistribution.map(s => (
+                        <Button
+                          key={s.id}
+                          variant={filterSection === s.id ? 'default' : 'outline'}
+                          size="sm"
+                          className="shrink-0 text-xs h-8"
+                          onClick={() => { setFilterSection(s.id); setPage(1); }}
+                        >
+                          {s.name} ({s.count})
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {institutionType === 'college' && (
+              <>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Year</p>
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                    <Button
+                      variant={filterYear === 'all' ? 'default' : 'outline'}
+                      size="sm"
+                      className="shrink-0 text-xs h-8"
+                      onClick={() => { setFilterYear('all'); setFilterSemester('all'); setPage(1); }}
+                    >
+                      All ({institutionStudents.length})
+                    </Button>
+                    {yearDistribution.map(y => (
+                      <Button
+                        key={y.id}
+                        variant={filterYear === y.id ? 'default' : 'outline'}
+                        size="sm"
+                        className="shrink-0 text-xs h-8"
+                        onClick={() => { setFilterYear(y.id); setFilterSemester('all'); setPage(1); }}
+                      >
+                        {y.name} ({y.count})
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                {filterYear !== 'all' && selectedYearSemesters.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Semester</p>
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                      <Button
+                        variant={filterSemester === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        className="shrink-0 text-xs h-8"
+                        onClick={() => { setFilterSemester('all'); setPage(1); }}
+                      >
+                        All ({institutionStudents.filter(s => s.year_id === filterYear).length})
+                      </Button>
+                      {semesterDistribution.map(s => (
+                        <Button
+                          key={s.id}
+                          variant={filterSemester === s.id ? 'default' : 'outline'}
+                          size="sm"
+                          className="shrink-0 text-xs h-8"
+                          onClick={() => { setFilterSemester(s.id); setPage(1); }}
+                        >
+                          {s.name} ({s.count})
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Distribution Summary */}
+        {institutionType === 'school' && filterClass !== 'all' && sectionDistribution.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+            {sectionDistribution.map(s => (
+              <Card key={s.id} className={`cursor-pointer transition-all ${filterSection === s.id ? 'border-primary shadow-sm' : 'hover:border-primary/40'}`}
+                onClick={() => { setFilterSection(s.id); setPage(1); }}>
+                <CardContent className="p-3 text-center">
+                  <p className="text-xs text-muted-foreground">{s.name}</p>
+                  <p className="text-lg font-bold text-primary">{s.count}</p>
                 </CardContent>
               </Card>
-              <Card><CardContent className="flex items-center gap-4 p-5">
-                <div className="p-3 rounded-xl bg-green-500/10 text-green-600"><GraduationCap className="h-6 w-6" /></div>
-                <div><p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active</p><p className="text-2xl font-bold">{analytics.active}</p></div>
-              </CardContent></Card>
-              <Card><CardContent className="flex items-center gap-4 p-5">
-                <div className="p-3 rounded-xl bg-orange-500/10 text-orange-600"><UserPlus className="h-6 w-6" /></div>
-                <div><p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Inactive</p><p className="text-2xl font-bold">{analytics.total - analytics.active}</p></div>
-              </CardContent></Card>
-              <Card><CardContent className="flex items-center gap-4 p-5">
-                <div className="p-3 rounded-xl bg-destructive/10 text-destructive"><Layers className="h-6 w-6" /></div>
-                <div><p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pending Fees</p><p className="text-2xl font-bold">₹{analytics.totalPending.toLocaleString('en-IN')}</p></div>
-              </CardContent></Card>
-            </div>
-
-            {/* Courses for current institution type */}
-            {(institutionType === 'college' ? collegeCourses : schoolCourses).length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  {institutionType === 'college' ? <GraduationCap className="h-5 w-5 text-primary" /> : <School className="h-5 w-5 text-primary" />}
-                  {institutionType === 'college' ? 'College' : 'School'} Courses
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {(institutionType === 'college' ? collegeCourses : schoolCourses).map(c => (
-                    <Card key={c.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('course', c.id, c.name)}>
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div><p className="font-semibold text-sm">{c.name}</p><p className="text-xs text-muted-foreground">Click to view</p></div>
-                        <div className="text-2xl font-bold text-primary">{analytics.byCourse[c.id] || 0}</div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {institutionType === 'college' && years.filter(y => y.is_active && institutionCourseIds.has(y.course_id)).length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /> Year-wise Distribution</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {years.filter(y => y.is_active && institutionCourseIds.has(y.course_id)).map(y => (
-                    <Card key={y.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('year', y.id, `${y.name} (${getCourseName(y.course_id)})`)}>
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div><p className="font-semibold text-sm">{y.name}</p><p className="text-xs text-muted-foreground">{getCourseName(y.course_id)}</p></div>
-                        <div className="text-2xl font-bold text-primary">{analytics.byYear[y.id] || 0}</div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {institutionType === 'school' && classes.filter(cl => cl.is_active && institutionCourseIds.has(cl.course_id)).length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><School className="h-5 w-5 text-primary" /> Class-wise Distribution</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {classes.filter(cl => cl.is_active && institutionCourseIds.has(cl.course_id)).map(cl => (
-                    <Card key={cl.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('class', cl.id, `${cl.name} (${getCourseName(cl.course_id)})`)}>
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div><p className="font-semibold text-sm">{cl.name}</p><p className="text-xs text-muted-foreground">{getCourseName(cl.course_id)}</p></div>
-                        <div className="text-2xl font-bold text-primary">{analytics.byClass[cl.id] || 0}</div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {institutionType === 'college' && semesters.filter(s => s.is_active).length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Layers className="h-5 w-5 text-primary" /> Semester-wise Distribution</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {semesters.filter(s => {
-                    if (!s.is_active) return false;
-                    const yr = years.find(y => y.id === s.year_id);
-                    return yr && institutionCourseIds.has(yr.course_id);
-                  }).map(s => {
-                    const yr = years.find(y => y.id === s.year_id);
-                    return (
-                      <Card key={s.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('semester', s.id, `${s.name} – ${yr ? `${getCourseName(yr.course_id)} / ${yr.name}` : ''}`)}>
-                        <CardContent className="p-4 flex items-center justify-between">
-                          <div><p className="font-semibold text-sm">{s.name}</p><p className="text-xs text-muted-foreground">{yr ? `${getCourseName(yr.course_id)} · ${yr.name}` : ''}</p></div>
-                          <div className="text-2xl font-bold text-primary">{analytics.bySemester[s.id] || 0}</div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {institutionType === 'school' && sections.filter(s => s.is_active).length > 0 && (
-              <div>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2"><Layers className="h-5 w-5 text-primary" /> Section-wise Distribution</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {sections.filter(s => {
-                    if (!s.is_active) return false;
-                    const cl = classes.find(c => c.id === s.class_id);
-                    return cl && institutionCourseIds.has(cl.course_id);
-                  }).map(s => {
-                    const cl = classes.find(c => c.id === s.class_id);
-                    return (
-                      <Card key={s.id} className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all" onClick={() => handleCardClick('section', s.id, `${s.name} – ${cl ? `${getCourseName(cl.course_id)} / ${cl.name}` : ''}`)}>
-                        <CardContent className="p-4 flex items-center justify-between">
-                          <div><p className="font-semibold text-sm">{s.name}</p><p className="text-xs text-muted-foreground">{cl ? `${getCourseName(cl.course_id)} · ${cl.name}` : ''}</p></div>
-                          <div className="text-2xl font-bold text-primary">{analytics.bySection[s.id] || 0}</div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            ))}
           </div>
         )}
 
-        {/* LIST VIEW */}
-        {view === 'list' && (
-          <div className="space-y-4">
-            {activeFilter && (
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-sm px-3 py-1 gap-1">
-                  {activeFilter.label}
-                  <button onClick={() => { setActiveFilter(null); setPage(1); }} className="ml-1 hover:text-foreground"><X className="h-3 w-3" /></button>
-                </Badge>
-                <span className="text-sm text-muted-foreground">{filtered.length} students</span>
-              </div>
-            )}
+        {institutionType === 'college' && filterYear !== 'all' && semesterDistribution.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+            {semesterDistribution.map(s => (
+              <Card key={s.id} className={`cursor-pointer transition-all ${filterSemester === s.id ? 'border-primary shadow-sm' : 'hover:border-primary/40'}`}
+                onClick={() => { setFilterSemester(s.id); setPage(1); }}>
+                <CardContent className="p-3 text-center">
+                  <p className="text-xs text-muted-foreground">{s.name}</p>
+                  <p className="text-lg font-bold text-primary">{s.count}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
-            <div className="flex flex-wrap gap-3">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search by name, phone, admission no..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="pl-10" />
-              </div>
-              <Select value={filterCourse} onValueChange={v => { setFilterCourse(v); setFilterYear('all'); setFilterSemester('all'); setFilterClass('all'); setFilterSection('all'); setPage(1); }}>
-                <SelectTrigger className="w-[160px]"><SelectValue placeholder="Course" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Courses</SelectItem>
-                  {(institutionType === 'college' ? collegeCourses : schoolCourses).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {filterCourse !== 'all' && selectedCourseType === 'college' && (
-                <>
-                  <Select value={filterYear} onValueChange={v => { setFilterYear(v); setFilterSemester('all'); setPage(1); }}>
-                    <SelectTrigger className="w-[160px]"><SelectValue placeholder="Year" /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">All Years</SelectItem>{filterYearsArr.map(y => <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                  {filterYear !== 'all' && (
-                    <Select value={filterSemester} onValueChange={v => { setFilterSemester(v); setPage(1); }}>
-                      <SelectTrigger className="w-[160px]"><SelectValue placeholder="Semester" /></SelectTrigger>
-                      <SelectContent><SelectItem value="all">All Semesters</SelectItem>{filterSemestersArr.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                  )}
-                </>
-              )}
-              {filterCourse !== 'all' && selectedCourseType === 'school' && (
-                <>
-                  <Select value={filterClass} onValueChange={v => { setFilterClass(v); setFilterSection('all'); setPage(1); }}>
-                    <SelectTrigger className="w-[160px]"><SelectValue placeholder="Class" /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">All Classes</SelectItem>{filterClassesArr.map(cl => <SelectItem key={cl.id} value={cl.id}>{cl.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                  {filterClass !== 'all' && (
-                    <Select value={filterSection} onValueChange={v => { setFilterSection(v); setPage(1); }}>
-                      <SelectTrigger className="w-[160px]"><SelectValue placeholder="Section" /></SelectTrigger>
-                      <SelectContent><SelectItem value="all">All Sections</SelectItem>{filterSectionsArr.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-                    </Select>
-                  )}
-                </>
-              )}
-              <Select value={filterStatus} onValueChange={v => { setFilterStatus(v); setPage(1); }}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent>
-              </Select>
-            </div>
+        {/* Search & Status Filter */}
+        <div className="flex flex-wrap gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search by name, phone, admission no..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="pl-10" />
+          </div>
+          <Select value={filterStatus} onValueChange={v => { setFilterStatus(v); setPage(1); }}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent>
+          </Select>
+        </div>
 
-            <Card>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Adm. No</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Course</TableHead>
-                      <TableHead>Year/Class</TableHead>
-                      <TableHead>Sem/Section</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+        {/* Student Table */}
+        <Card>
+          <CardContent className="p-0 overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Adm. No</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead>{institutionType === 'school' ? 'Class' : 'Year'}</TableHead>
+                  <TableHead>{institutionType === 'school' ? 'Section' : 'Semester'}</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginated.map(s => {
+                  const type = s.course_id ? getCourseType(s.course_id) : 'college';
+                  const disc = discountByStudent[s.id] || 0;
+                  return (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-mono text-xs">{s.admission_number || '-'}</TableCell>
+                      <TableCell>
+                        <div className="font-medium">{s.full_name || s.name}</div>
+                        {disc > 0 && <Badge variant="outline" className="text-xs mt-0.5 text-orange-600 border-orange-300"><Percent className="h-3 w-3 mr-0.5" />Discount Applied</Badge>}
+                      </TableCell>
+                      <TableCell>{s.course_id ? getCourseName(s.course_id) : s.course}</TableCell>
+                      <TableCell>{type === 'school' ? (s.class_id ? getClassName(s.class_id) : '-') : (s.year_id ? getYearName(s.year_id) : s.year)}</TableCell>
+                      <TableCell>{type === 'school' ? (s.section_id ? getSectionName(s.section_id) : '-') : (s.semester_id ? getSemesterName(s.semester_id) : s.semester)}</TableCell>
+                      <TableCell>{s.phone || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={s.admission_status === 'active' ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => toggleStatus.mutate({ id: s.id, status: s.admission_status })}>
+                          {s.admission_status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => setProfileStudent(s)} title="View"><Eye className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(s)} title="Edit"><Pencil className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => { setDiscountOpen(s); setDiscountAmount(''); setDiscountReason(''); }} title="Give Discount"><Percent className="h-4 w-4" /></Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginated.map(s => {
-                      const type = s.course_id ? getCourseType(s.course_id) : 'college';
-                      const disc = discountByStudent[s.id] || 0;
-                      return (
-                        <TableRow key={s.id}>
-                          <TableCell className="font-mono text-xs">{s.admission_number || '-'}</TableCell>
-                          <TableCell>
-                            <div className="font-medium">{s.full_name || s.name}</div>
-                            {disc > 0 && <Badge variant="outline" className="text-xs mt-0.5 text-orange-600 border-orange-300"><Percent className="h-3 w-3 mr-0.5" />Discount Applied</Badge>}
-                          </TableCell>
-                          <TableCell>{s.course_id ? getCourseName(s.course_id) : s.course}</TableCell>
-                          <TableCell>{type === 'school' ? (s.class_id ? getClassName(s.class_id) : '-') : (s.year_id ? getYearName(s.year_id) : s.year)}</TableCell>
-                          <TableCell>{type === 'school' ? (s.section_id ? getSectionName(s.section_id) : '-') : (s.semester_id ? getSemesterName(s.semester_id) : s.semester)}</TableCell>
-                          <TableCell>{s.phone || '-'}</TableCell>
-                          <TableCell>
-                            <Badge variant={s.admission_status === 'active' ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => toggleStatus.mutate({ id: s.id, status: s.admission_status })}>
-                              {s.admission_status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => setProfileStudent(s)} title="View"><Eye className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="icon" onClick={() => openEdit(s)} title="Edit"><Pencil className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="icon" onClick={() => { setDiscountOpen(s); setDiscountAmount(''); setDiscountReason(''); }} title="Give Discount"><Percent className="h-4 w-4" /></Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    {paginated.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">{isLoading ? 'Loading...' : 'No students found'}</TableCell></TableRow>}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                  );
+                })}
+                {paginated.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">{isLoading ? 'Loading...' : 'No students found'}</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">{filtered.length} students</p>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-                  <span className="text-sm">Page {page} of {totalPages}</span>
-                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
-                </div>
-              </div>
-            )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">{filtered.length} students</p>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+              <span className="text-sm">Page {page} of {totalPages}</span>
+              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
+            </div>
           </div>
         )}
-
         {/* Edit/Add Dialog */}
         <Dialog open={formOpen} onOpenChange={v => { if (!v) { setFormOpen(false); setEditStudent(null); } }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
