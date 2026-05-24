@@ -37,7 +37,6 @@ import AdminCourseStructure from "./pages/admin/AdminCourseStructure";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminDefaulters from "./pages/admin/AdminDefaulters";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
-import { InstitutionProvider } from "@/hooks/useInstitution";
 
 const queryClient = new QueryClient();
 
