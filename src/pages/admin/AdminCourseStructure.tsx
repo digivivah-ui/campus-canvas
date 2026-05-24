@@ -23,7 +23,6 @@ type SectionItem = { id: string; name: string; class_id: string; is_active: bool
 export default function AdminCourseStructure() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const { institutionType } = useInstitution();
 
   const { data: courses = [] } = useQuery<Course[]>({
     queryKey: ['courses'],
@@ -31,24 +30,6 @@ export default function AdminCourseStructure() {
       const { data, error } = await supabase.from('courses').select('*').order('name');
       if (error) throw error;
       return data as Course[];
-    },
-  });
-
-  const { data: years = [] } = useQuery<Year[]>({
-    queryKey: ['years'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('years').select('*').order('name');
-      if (error) throw error;
-      return data as Year[];
-    },
-  });
-
-  const { data: semesters = [] } = useQuery<Semester[]>({
-    queryKey: ['semesters'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('semesters').select('*').order('name');
-      if (error) throw error;
-      return data as Semester[];
     },
   });
 
@@ -70,107 +51,65 @@ export default function AdminCourseStructure() {
     },
   });
 
-  const filteredCourses = courses.filter(c => c.institution_type === institutionType);
+  const filteredCourses = courses.filter(c => c.institution_type === 'school');
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Institution Type Toggle */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Course Structure</h1>
-            <p className="text-sm text-muted-foreground">Manage {institutionType === 'college' ? 'college courses, years & semesters' : 'school courses, classes & sections'}</p>
+            <p className="text-sm text-muted-foreground">Manage school courses, classes &amp; sections</p>
           </div>
         </div>
 
-        {/* Tree View */}
         <Card>
-          <CardHeader><CardTitle className="text-base">{institutionType === 'college' ? 'Course → Year → Semester' : 'Course → Class → Section'} Hierarchy</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Course → Class → Section Hierarchy</CardTitle></CardHeader>
           <CardContent>
             {filteredCourses.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">No {institutionType} courses yet. Add one below.</p>
+              <p className="text-sm text-muted-foreground text-center py-6">No school courses yet. Add one below.</p>
             ) : (
               <div className="space-y-2">
                 {filteredCourses.filter(c => c.is_active).map(course => {
-                  if (institutionType === 'college') {
-                    const courseYears = years.filter(y => y.course_id === course.id && y.is_active);
-                    return (
-                      <div key={course.id} className="border rounded-lg p-3">
-                        <p className="font-semibold text-sm flex items-center gap-1"><GraduationCap className="h-4 w-4 text-primary" />{course.name}</p>
-                        {courseYears.length > 0 && (
-                          <div className="ml-4 mt-2 space-y-1">
-                            {courseYears.map(year => {
-                              const yearSems = semesters.filter(s => s.year_id === year.id && s.is_active);
-                              return (
-                                <div key={year.id}>
-                                  <p className="text-sm text-muted-foreground flex items-center gap-1"><ChevronRight className="h-3 w-3" />{year.name}</p>
-                                  {yearSems.length > 0 && (
-                                    <div className="ml-5 flex flex-wrap gap-1 mt-1">
-                                      {yearSems.map(sem => <Badge key={sem.id} variant="secondary" className="text-xs">{sem.name}</Badge>)}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  } else {
-                    const courseClasses = classes.filter(cl => cl.course_id === course.id && cl.is_active);
-                    return (
-                      <div key={course.id} className="border rounded-lg p-3">
-                        <p className="font-semibold text-sm flex items-center gap-1"><School className="h-4 w-4 text-primary" />{course.name}</p>
-                        {courseClasses.length > 0 && (
-                          <div className="ml-4 mt-2 space-y-1">
-                            {courseClasses.map(cl => {
-                              const clSections = sections.filter(s => s.class_id === cl.id && s.is_active);
-                              return (
-                                <div key={cl.id}>
-                                  <p className="text-sm text-muted-foreground flex items-center gap-1"><ChevronRight className="h-3 w-3" />{cl.name}</p>
-                                  {clSections.length > 0 && (
-                                    <div className="ml-5 flex flex-wrap gap-1 mt-1">
-                                      {clSections.map(sec => <Badge key={sec.id} variant="secondary" className="text-xs">{sec.name}</Badge>)}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }
+                  const courseClasses = classes.filter(cl => cl.course_id === course.id && cl.is_active);
+                  return (
+                    <div key={course.id} className="border rounded-lg p-3">
+                      <p className="font-semibold text-sm flex items-center gap-1"><School className="h-4 w-4 text-primary" />{course.name}</p>
+                      {courseClasses.length > 0 && (
+                        <div className="ml-4 mt-2 space-y-1">
+                          {courseClasses.map(cl => {
+                            const clSections = sections.filter(s => s.class_id === cl.id && s.is_active);
+                            return (
+                              <div key={cl.id}>
+                                <p className="text-sm text-muted-foreground flex items-center gap-1"><ChevronRight className="h-3 w-3" />{cl.name}</p>
+                                {clSections.length > 0 && (
+                                  <div className="ml-5 flex flex-wrap gap-1 mt-1">
+                                    {clSections.map(sec => <Badge key={sec.id} variant="secondary" className="text-xs">{sec.name}</Badge>)}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
                 })}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Management Tabs */}
-        {institutionType === 'college' ? (
-          <Tabs defaultValue="courses" className="space-y-4">
-            <TabsList className="w-full flex flex-wrap h-auto gap-1">
-              <TabsTrigger value="courses" className="flex-1 min-w-[100px]">Courses</TabsTrigger>
-              <TabsTrigger value="years" className="flex-1 min-w-[100px]">Years</TabsTrigger>
-              <TabsTrigger value="semesters" className="flex-1 min-w-[100px]">Semesters</TabsTrigger>
-            </TabsList>
-            <TabsContent value="courses"><CoursesTab courses={filteredCourses} institutionType="college" /></TabsContent>
-            <TabsContent value="years"><YearsTab years={years} courses={filteredCourses} /></TabsContent>
-            <TabsContent value="semesters"><SemestersTab semesters={semesters} years={years} courses={filteredCourses} /></TabsContent>
-          </Tabs>
-        ) : (
-          <Tabs defaultValue="courses" className="space-y-4">
-            <TabsList className="w-full flex flex-wrap h-auto gap-1">
-              <TabsTrigger value="courses" className="flex-1 min-w-[100px]">Courses</TabsTrigger>
-              <TabsTrigger value="classes" className="flex-1 min-w-[100px]">Classes</TabsTrigger>
-              <TabsTrigger value="sections" className="flex-1 min-w-[100px]">Sections</TabsTrigger>
-            </TabsList>
-            <TabsContent value="courses"><CoursesTab courses={filteredCourses} institutionType="school" /></TabsContent>
-            <TabsContent value="classes"><ClassesTab classes={classes} courses={filteredCourses} /></TabsContent>
-            <TabsContent value="sections"><SectionsTab sections={sections} classes={classes} courses={filteredCourses} /></TabsContent>
-          </Tabs>
-        )}
+        <Tabs defaultValue="courses" className="space-y-4">
+          <TabsList className="w-full flex flex-wrap h-auto gap-1">
+            <TabsTrigger value="courses" className="flex-1 min-w-[100px]">Courses</TabsTrigger>
+            <TabsTrigger value="classes" className="flex-1 min-w-[100px]">Classes</TabsTrigger>
+            <TabsTrigger value="sections" className="flex-1 min-w-[100px]">Sections</TabsTrigger>
+          </TabsList>
+          <TabsContent value="courses"><CoursesTab courses={filteredCourses} institutionType="school" /></TabsContent>
+          <TabsContent value="classes"><ClassesTab classes={classes} courses={filteredCourses} /></TabsContent>
+          <TabsContent value="sections"><SectionsTab sections={sections} classes={classes} courses={filteredCourses} /></TabsContent>
+        </Tabs>
       </div>
     </AdminLayout>
   );
