@@ -12,8 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, ChevronRight, School, GraduationCap } from 'lucide-react';
-import { useInstitution } from '@/hooks/useInstitution';
+import { Plus, Pencil, Trash2, ChevronRight, School } from 'lucide-react';
 
 type Course = { id: string; name: string; description: string | null; is_active: boolean; institution_type: string; created_at: string };
 type Year = { id: string; name: string; course_id: string; is_active: boolean; created_at: string };
