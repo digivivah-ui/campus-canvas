@@ -1,196 +1,205 @@
- import { ReactNode, useEffect } from 'react';
- import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { ReactNode, useEffect, useState } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
-    Home,
-    FileText,
-    Building2,
-    Users,
-    Calendar,
-    Image,
-    MessageSquare,
-    LogOut,
-    GraduationCap,
-    Menu,
-    Settings,
-    BarChart3,
-    Globe,
-    Video,
-    BookOpen,
-    IndianRupee,
-    PieChart,
-    UserCheck,
-    AlertTriangle,
-  } from 'lucide-react';
- import { useAuth } from '@/hooks/useAuth';
- import { Button } from '@/components/ui/button';
- import { PageLoader } from '@/components/common/LoadingSpinner';
+  Home, FileText, Building2, Users, Calendar, Image, MessageSquare, LogOut,
+  GraduationCap, Menu, Settings, BarChart3, Globe, Video, BookOpen,
+  IndianRupee, PieChart, UserCheck, AlertTriangle, ChevronDown, ChevronRight, School,
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { PageLoader } from '@/components/common/LoadingSpinner';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
-import { useInstitution } from '@/hooks/useInstitution';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { School } from 'lucide-react';
- 
- interface AdminLayoutProps {
-   children: ReactNode;
- }
- 
-const navItems = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/admin/settings', label: 'Site Settings', icon: Settings },
-  { href: '/admin/homepage', label: 'Homepage', icon: FileText },
-  { href: '/admin/about', label: 'About', icon: FileText },
-  { href: '/admin/stats', label: 'Statistics', icon: BarChart3 },
-  { href: '/admin/departments', label: 'Departments', icon: Building2 },
-  { href: '/admin/members', label: 'Members', icon: Users },
-  { href: '/admin/faculty', label: 'Faculty', icon: Users },
-  { href: '/admin/events', label: 'Events', icon: Calendar },
-  { href: '/admin/gallery', label: 'Gallery', icon: Image },
-  { href: '/admin/social-links', label: 'Social Links', icon: Globe },
-  { href: '/admin/explore-videos', label: 'Explore Videos', icon: Video },
-  { href: '/admin/programs', label: 'Programs', icon: BookOpen },
-  { href: '/admin/course-structure', label: 'Course Structure', icon: GraduationCap },
-  { href: '/admin/students', label: 'Students', icon: UserCheck },
-  { href: '/admin/finance', label: 'Finance', icon: IndianRupee },
-  { href: '/admin/analytics', label: 'Analytics', icon: PieChart },
-  { href: '/admin/defaulters', label: 'Defaulters', icon: AlertTriangle },
-  { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
-];
- 
- export function AdminLayout({ children }: AdminLayoutProps) {
-    const { user, isAdmin, isLoading, signOut } = useAuth();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { institutionType, setInstitutionType } = useInstitution();
- 
-   useEffect(() => {
-     if (!isLoading && !user) {
-       navigate('/admin');
-     }
-   }, [user, isLoading, navigate]);
- 
-   if (isLoading) {
-     return <PageLoader />;
-   }
- 
-   if (!user) {
-     return null;
-   }
- 
-   const handleSignOut = async () => {
-     await signOut();
-     navigate('/admin');
-   };
- 
-   return (
-     <div className="min-h-screen flex bg-secondary/30">
-       {/* Sidebar */}
-       <aside
-         className={cn(
-           'fixed inset-y-0 left-0 z-50 w-64 bg-primary transform transition-transform duration-300 lg:relative lg:translate-x-0',
-           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-         )}
-       >
-         <div className="flex flex-col h-full">
-            {/* Logo */}
-            <div className="p-6 border-b border-primary-foreground/20">
-              <Link to="/" className="flex items-center gap-3">
-                <div className="bg-accent p-2 rounded-lg">
-                  <GraduationCap className="h-6 w-6 text-accent-foreground" />
-                </div>
-                 <div>
-                   <h2 className="font-display font-bold text-primary-foreground">Admin Panel</h2>
-                   <p className="text-xs text-primary-foreground/60">MGCM, Ashta</p>
-                 </div>
-              </Link>
-            </div>
 
-            {/* Institution Mode Toggle */}
-            <div className="px-4 py-3 border-b border-primary-foreground/20">
-              <p className="text-xs font-medium text-primary-foreground/60 mb-2 uppercase tracking-wider">Institution Mode</p>
-              <Select value={institutionType} onValueChange={(v) => setInstitutionType(v as 'college' | 'school')}>
-                <SelectTrigger className="bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="college">
-                    <span className="flex items-center gap-2"><GraduationCap className="h-4 w-4" /> College</span>
-                  </SelectItem>
-                  <SelectItem value="school">
-                    <span className="flex items-center gap-2"><School className="h-4 w-4" /> School</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+interface AdminLayoutProps {
+  children: ReactNode;
+}
+
+type NavItem = { href: string; label: string; icon: any };
+type NavGroup = { id: string; label: string; icon: any; items: NavItem[] };
+
+const navGroups: NavGroup[] = [
+  {
+    id: 'website',
+    label: 'Website',
+    icon: Globe,
+    items: [
+      { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
+      { href: '/admin/settings', label: 'Site Settings', icon: Settings },
+      { href: '/admin/homepage', label: 'Homepage', icon: FileText },
+      { href: '/admin/about', label: 'About', icon: FileText },
+      { href: '/admin/stats', label: 'Statistics', icon: BarChart3 },
+      { href: '/admin/departments', label: 'Departments', icon: Building2 },
+      { href: '/admin/members', label: 'Members', icon: Users },
+      { href: '/admin/faculty', label: 'Faculty', icon: Users },
+      { href: '/admin/events', label: 'Events', icon: Calendar },
+      { href: '/admin/gallery', label: 'Gallery', icon: Image },
+      { href: '/admin/social-links', label: 'Social Links', icon: Globe },
+      { href: '/admin/explore-videos', label: 'Explore Videos', icon: Video },
+      { href: '/admin/programs', label: 'Programs', icon: BookOpen },
+    ],
+  },
+  {
+    id: 'school',
+    label: 'School ERP',
+    icon: School,
+    items: [
+      { href: '/admin/course-structure', label: 'Course Structure', icon: GraduationCap },
+      { href: '/admin/students', label: 'Students', icon: UserCheck },
+      { href: '/admin/finance', label: 'Finance', icon: IndianRupee },
+      { href: '/admin/analytics', label: 'Analytics', icon: PieChart },
+      { href: '/admin/defaulters', label: 'Defaulters', icon: AlertTriangle },
+    ],
+  },
+  {
+    id: 'communication',
+    label: 'Communication',
+    icon: MessageSquare,
+    items: [
+      { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
+    ],
+  },
+];
+
+const allItems = navGroups.flatMap(g => g.items);
+
+export function AdminLayout({ children }: AdminLayoutProps) {
+  const { user, isAdmin, isLoading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Auto-open the group containing the active route
+  const activeGroupId = navGroups.find(g => g.items.some(i => i.href === location.pathname))?.id;
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('admin_open_groups') : null;
+    if (stored) try { return JSON.parse(stored); } catch {}
+    return { website: true, school: true, communication: true };
+  });
+
+  useEffect(() => {
+    if (activeGroupId && !openGroups[activeGroupId]) {
+      setOpenGroups(p => ({ ...p, [activeGroupId]: true }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeGroupId]);
+
+  useEffect(() => {
+    localStorage.setItem('admin_open_groups', JSON.stringify(openGroups));
+  }, [openGroups]);
+
+  useEffect(() => {
+    if (!isLoading && !user) navigate('/admin');
+  }, [user, isLoading, navigate]);
+
+  if (isLoading) return <PageLoader />;
+  if (!user) return null;
+
+  const handleSignOut = async () => { await signOut(); navigate('/admin'); };
+  const toggleGroup = (id: string) => setOpenGroups(p => ({ ...p, [id]: !p[id] }));
+
+  return (
+    <div className="min-h-screen flex bg-secondary/30">
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 w-64 bg-primary transform transition-transform duration-300 lg:relative lg:translate-x-0',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="p-5 border-b border-primary-foreground/20">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="bg-accent p-2 rounded-lg">
+                <GraduationCap className="h-6 w-6 text-accent-foreground" />
+              </div>
+              <div>
+                <h2 className="font-display font-bold text-primary-foreground">Admin Panel</h2>
+                <p className="text-xs text-primary-foreground/60">MGCM, Ashta</p>
+              </div>
+            </Link>
+          </div>
+
+          {/* Navigation Groups */}
+          <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
+            {navGroups.map(group => {
+              const isOpen = !!openGroups[group.id];
+              const hasActive = group.items.some(i => i.href === location.pathname);
+              return (
+                <div key={group.id}>
+                  <button
+                    onClick={() => toggleGroup(group.id)}
+                    className={cn(
+                      'w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors',
+                      hasActive ? 'text-primary-foreground' : 'text-primary-foreground/60 hover:text-primary-foreground'
+                    )}
+                  >
+                    <span className="flex items-center gap-2">
+                      <group.icon className="h-3.5 w-3.5" />
+                      {group.label}
+                    </span>
+                    {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                  </button>
+                  {isOpen && (
+                    <div className="mt-1 space-y-0.5">
+                      {group.items.map(item => (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          onClick={() => setSidebarOpen(false)}
+                          className={cn(
+                            'flex items-center gap-3 px-3 py-2 ml-2 rounded-md text-sm font-medium transition-colors',
+                            location.pathname === item.href
+                              ? 'bg-accent text-accent-foreground shadow-sm'
+                              : 'text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                          )}
+                        >
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+
+          {/* User & Logout */}
+          <div className="p-4 border-t border-primary-foreground/20">
+            <div className="mb-3 px-2">
+              <p className="text-sm font-medium text-primary-foreground truncate">{user.email}</p>
+              <p className="text-xs text-primary-foreground/60">{isAdmin ? 'Administrator' : 'User'}</p>
             </div>
- 
-           {/* Navigation */}
-           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-             {navItems.map((item) => (
-               <Link
-                 key={item.href}
-                 to={item.href}
-                 onClick={() => setSidebarOpen(false)}
-                 className={cn(
-                   'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                   location.pathname === item.href
-                     ? 'bg-accent text-accent-foreground'
-                     : 'text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10'
-                 )}
-               >
-                 <item.icon className="h-5 w-5" />
-                 {item.label}
-               </Link>
-             ))}
-           </nav>
- 
-           {/* User & Logout */}
-           <div className="p-4 border-t border-primary-foreground/20">
-             <div className="mb-4 px-4">
-               <p className="text-sm font-medium text-primary-foreground truncate">
-                 {user.email}
-               </p>
-               <p className="text-xs text-primary-foreground/60">
-                 {isAdmin ? 'Administrator' : 'User'}
-               </p>
-             </div>
-             <Button
-               variant="outline"
-               className="bg-accent text-accent-foreground shadow-gold hover:bg-yellow-200"
-               onClick={handleSignOut}
-             >
-               <LogOut className="h-4 w-4 mr-2" />
-               Sign Out
-             </Button>
-           </div>
-         </div>
-       </aside>
- 
-       {/* Overlay */}
-       {sidebarOpen && (
-         <div
-           className="fixed inset-0 bg-primary/50 z-40 lg:hidden"
-           onClick={() => setSidebarOpen(false)}
-         />
-       )}
- 
-       {/* Main Content */}
-       <div className="flex-1 flex flex-col min-w-0">
-         {/* Top Bar */}
-         <header className="sticky top-0 z-30 bg-background border-b border-border px-6 py-4 flex items-center gap-4">
-           <button
-             className="lg:hidden p-2 rounded-lg hover:bg-secondary"
-             onClick={() => setSidebarOpen(true)}
-           >
-             <Menu className="h-6 w-6" />
-           </button>
-           <h1 className="font-display text-xl font-semibold text-foreground">
-             {navItems.find((item) => item.href === location.pathname)?.label || 'Admin'}
-           </h1>
-         </header>
- 
-         {/* Content */}
-         <main className="flex-1 p-6 overflow-y-auto">{children}</main>
-       </div>
-     </div>
-   );
- }
+            <Button
+              variant="outline"
+              className="w-full bg-accent text-accent-foreground shadow-gold hover:bg-yellow-200"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-primary/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Main */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="sticky top-0 z-30 bg-background border-b border-border px-6 py-4 flex items-center gap-4">
+          <button className="lg:hidden p-2 rounded-lg hover:bg-secondary" onClick={() => setSidebarOpen(true)}>
+            <Menu className="h-6 w-6" />
+          </button>
+          <h1 className="font-display text-xl font-semibold text-foreground">
+            {allItems.find(item => item.href === location.pathname)?.label || 'Admin'}
+          </h1>
+        </header>
+        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+      </div>
+    </div>
+  );
+}
