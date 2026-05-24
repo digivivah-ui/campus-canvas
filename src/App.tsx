@@ -43,7 +43,6 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <InstitutionProvider>
       <SiteSettingsProvider>
         <TooltipProvider>
           <Toaster />
@@ -87,7 +86,6 @@ const App = () => (
           </BrowserRouter>
         </TooltipProvider>
       </SiteSettingsProvider>
-      </InstitutionProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
