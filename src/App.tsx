@@ -37,14 +37,12 @@ import AdminCourseStructure from "./pages/admin/AdminCourseStructure";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminDefaulters from "./pages/admin/AdminDefaulters";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
-import { InstitutionProvider } from "@/hooks/useInstitution";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <InstitutionProvider>
       <SiteSettingsProvider>
         <TooltipProvider>
           <Toaster />
@@ -88,7 +86,6 @@ const App = () => (
           </BrowserRouter>
         </TooltipProvider>
       </SiteSettingsProvider>
-      </InstitutionProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

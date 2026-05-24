@@ -4,29 +4,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useInstitution } from '@/hooks/useInstitution';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { AlertTriangle, GraduationCap, School, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
 import { useState, useMemo } from 'react';
 
-type SortKey = 'name' | 'pending' | 'course' | 'yearClass';
+type SortKey = 'name' | 'pending' | 'course' | 'className';
 type SortDir = 'asc' | 'desc';
 
 export default function AdminDefaulters() {
-  const {
-    courses, years, classes, sections, semesters,
-    collegeCourses, schoolCourses,
-    getCourseName, getYearName, getSemesterName, getClassName, getSectionName, getCourseType,
-  } = useCourseStructure();
+  const { classes, sections, schoolCourses, getCourseName, getClassName, getSectionName } = useCourseStructure();
 
-  const { institutionType } = useInstitution();
-  const institutionFilter = institutionType;
   const [filterCourse, setFilterCourse] = useState<string>('all');
-  const [filterSub, setFilterSub] = useState<string>('all');
-  const [filterSubSub, setFilterSubSub] = useState<string>('all');
+  const [filterClass, setFilterClass] = useState<string>('all');
+  const [filterSection, setFilterSection] = useState<string>('all');
   const [academicYear, setAcademicYear] = useState<string>(String(new Date().getFullYear()));
   const [pendingRange, setPendingRange] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -67,26 +60,15 @@ export default function AdminDefaulters() {
     return sorted;
   }, [students]);
 
-  const filteredCourses = useMemo(() => {
-    if (institutionFilter === 'college') return collegeCourses;
-    return schoolCourses;
-  }, [institutionFilter, collegeCourses, schoolCourses]);
-
-  const subItems = useMemo(() => {
+  const classItems = useMemo(() => {
     if (filterCourse === 'all') return [];
-    const type = getCourseType(filterCourse);
-    if (type === 'college') return years.filter(y => y.course_id === filterCourse);
     return classes.filter(cl => cl.course_id === filterCourse);
-  }, [filterCourse, years, classes, getCourseType]);
+  }, [filterCourse, classes]);
 
-  const subSubItems = useMemo(() => {
-    if (filterSub === 'all') return [];
-    const type = filterCourse !== 'all' ? getCourseType(filterCourse) : null;
-    if (type === 'college') return semesters.filter(s => s.year_id === filterSub);
-    return sections.filter(s => s.class_id === filterSub);
-  }, [filterSub, filterCourse, getCourseType, semesters, sections]);
-
-  const isSchoolContext = institutionFilter === 'school' || (filterCourse !== 'all' && getCourseType(filterCourse) === 'school');
+  const sectionItems = useMemo(() => {
+    if (filterClass === 'all') return [];
+    return sections.filter(s => s.class_id === filterClass);
+  }, [filterClass, sections]);
 
   const defaulters = useMemo(() => {
     let list = students.map(s => ({
@@ -95,50 +77,39 @@ export default function AdminDefaulters() {
       pending: Math.max(0, Number(s.total_fees) - Number(s.paid_fees) - (discountByStudent[s.id] || 0)),
     })).filter(s => s.pending > 0);
 
-    // Academic year
     const yr = Number(academicYear);
     list = list.filter(s => s.admission_date && new Date(s.admission_date).getFullYear() <= yr);
 
-    // Institution
-    const courseIds = new Set((institutionFilter === 'college' ? collegeCourses : schoolCourses).map(c => c.id));
+    const courseIds = new Set(schoolCourses.map(c => c.id));
     list = list.filter(s => s.course_id && courseIds.has(s.course_id));
     if (filterCourse !== 'all') list = list.filter(s => s.course_id === filterCourse);
-    if (filterSub !== 'all') {
-      if (isSchoolContext) list = list.filter(s => s.class_id === filterSub);
-      else list = list.filter(s => s.year_id === filterSub);
-    }
-    if (filterSubSub !== 'all') {
-      if (isSchoolContext) list = list.filter(s => s.section_id === filterSubSub);
-      else list = list.filter(s => s.semester_id === filterSubSub);
-    }
+    if (filterClass !== 'all') list = list.filter(s => s.class_id === filterClass);
+    if (filterSection !== 'all') list = list.filter(s => s.section_id === filterSection);
 
-    // Pending range
     if (pendingRange === 'low') list = list.filter(s => s.pending < 5000);
     else if (pendingRange === 'medium') list = list.filter(s => s.pending >= 5000 && s.pending <= 10000);
     else if (pendingRange === 'high') list = list.filter(s => s.pending > 10000);
 
-    // Search
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(s => s.name.toLowerCase().includes(q) || (s.phone || '').includes(q) || (s.email || '').toLowerCase().includes(q));
     }
 
-    // Sort
     list.sort((a, b) => {
       let cmp = 0;
       if (sortKey === 'name') cmp = a.name.localeCompare(b.name);
       else if (sortKey === 'pending') cmp = a.pending - b.pending;
       else if (sortKey === 'course') cmp = (a.course_id ? getCourseName(a.course_id) : a.course).localeCompare(b.course_id ? getCourseName(b.course_id) : b.course);
-      else if (sortKey === 'yearClass') {
-        const aLabel = isSchoolContext ? (a.class_id ? getClassName(a.class_id) : '') : (a.year_id ? getYearName(a.year_id) : '');
-        const bLabel = isSchoolContext ? (b.class_id ? getClassName(b.class_id) : '') : (b.year_id ? getYearName(b.year_id) : '');
+      else if (sortKey === 'className') {
+        const aLabel = a.class_id ? getClassName(a.class_id) : '';
+        const bLabel = b.class_id ? getClassName(b.class_id) : '';
         cmp = aLabel.localeCompare(bLabel);
       }
       return sortDir === 'desc' ? -cmp : cmp;
     });
 
     return list;
-  }, [students, discountByStudent, academicYear, institutionFilter, filterCourse, filterSub, filterSubSub, pendingRange, search, sortKey, sortDir, collegeCourses, schoolCourses, getCourseType, getCourseName, getYearName, getClassName, isSchoolContext]);
+  }, [students, discountByStudent, academicYear, schoolCourses, filterCourse, filterClass, filterSection, pendingRange, search, sortKey, sortDir, getCourseName, getClassName]);
 
   const totalPages = Math.max(1, Math.ceil(defaulters.length / pageSize));
   const paginated = defaulters.slice((page - 1) * pageSize, page * pageSize);
@@ -146,7 +117,6 @@ export default function AdminDefaulters() {
   const totalPending = defaulters.reduce((s, d) => s + d.pending, 0);
   const highCount = defaulters.filter(d => d.pending > 10000).length;
   const medCount = defaulters.filter(d => d.pending >= 5000 && d.pending <= 10000).length;
-  const lowCount = defaulters.filter(d => d.pending < 5000).length;
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -159,13 +129,9 @@ export default function AdminDefaulters() {
     return <Badge variant="secondary">Low</Badge>;
   }
 
-  const subLabel = isSchoolContext ? 'Class' : 'Year';
-  const subSubLabel = isSchoolContext ? 'Section' : 'Semester';
-
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{defaulters.length}</p><p className="text-xs text-muted-foreground">Total Defaulters</p></CardContent></Card>
           <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold">₹{totalPending.toLocaleString('en-IN')}</p><p className="text-xs text-muted-foreground">Total Pending</p></CardContent></Card>
@@ -173,32 +139,31 @@ export default function AdminDefaulters() {
           <Card><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-yellow-600">{medCount}</p><p className="text-xs text-muted-foreground">Medium (₹5k–10k)</p></CardContent></Card>
         </div>
 
-        {/* Filters */}
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-3 items-center">
-              <Select value={filterCourse} onValueChange={v => { setFilterCourse(v); setFilterSub('all'); setFilterSubSub('all'); setPage(1); }}>
+              <Select value={filterCourse} onValueChange={v => { setFilterCourse(v); setFilterClass('all'); setFilterSection('all'); setPage(1); }}>
                 <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Courses" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Courses</SelectItem>
-                  {filteredCourses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {schoolCourses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-              {filterCourse !== 'all' && subItems.length > 0 && (
-                <Select value={filterSub} onValueChange={v => { setFilterSub(v); setFilterSubSub('all'); setPage(1); }}>
-                  <SelectTrigger className="w-[140px]"><SelectValue placeholder={`All ${subLabel}s`} /></SelectTrigger>
+              {filterCourse !== 'all' && classItems.length > 0 && (
+                <Select value={filterClass} onValueChange={v => { setFilterClass(v); setFilterSection('all'); setPage(1); }}>
+                  <SelectTrigger className="w-[140px]"><SelectValue placeholder="All Classes" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All {subLabel}s</SelectItem>
-                    {subItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
+                    <SelectItem value="all">All Classes</SelectItem>
+                    {classItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}
-              {filterSub !== 'all' && subSubItems.length > 0 && (
-                <Select value={filterSubSub} onValueChange={v => { setFilterSubSub(v); setPage(1); }}>
-                  <SelectTrigger className="w-[140px]"><SelectValue placeholder={`All ${subSubLabel}s`} /></SelectTrigger>
+              {filterClass !== 'all' && sectionItems.length > 0 && (
+                <Select value={filterSection} onValueChange={v => { setFilterSection(v); setPage(1); }}>
+                  <SelectTrigger className="w-[140px]"><SelectValue placeholder="All Sections" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All {subSubLabel}s</SelectItem>
-                    {subSubItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
+                    <SelectItem value="all">All Sections</SelectItem>
+                    {sectionItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}
@@ -225,7 +190,6 @@ export default function AdminDefaulters() {
           </CardContent>
         </Card>
 
-        {/* Table */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
@@ -241,8 +205,8 @@ export default function AdminDefaulters() {
                     <TableRow>
                       <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('name')}>Name {sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</TableHead>
                       <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('course')}>Course {sortKey === 'course' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</TableHead>
-                      <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('yearClass')}>{subLabel} {sortKey === 'yearClass' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</TableHead>
-                      <TableHead>{subSubLabel}</TableHead>
+                      <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('className')}>Class {sortKey === 'className' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</TableHead>
+                      <TableHead>Section</TableHead>
                       <TableHead className="text-right">Total</TableHead>
                       <TableHead className="text-right">Paid</TableHead>
                       <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleSort('pending')}>Pending {sortKey === 'pending' ? (sortDir === 'asc' ? '↑' : '↓') : ''}</TableHead>
@@ -251,29 +215,24 @@ export default function AdminDefaulters() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginated.map(s => {
-                      const type = s.course_id ? getCourseType(s.course_id) : 'college';
-                      const isS = type === 'school';
-                      return (
-                        <TableRow key={s.id}>
-                          <TableCell className="font-medium">{s.name}</TableCell>
-                          <TableCell>{s.course_id ? getCourseName(s.course_id) : s.course}</TableCell>
-                          <TableCell>{isS ? (s.class_id ? getClassName(s.class_id) : '-') : (s.year_id ? getYearName(s.year_id) : `Y${s.year}`)}</TableCell>
-                          <TableCell>{isS ? (s.section_id ? getSectionName(s.section_id) : '-') : (s.semester_id ? getSemesterName(s.semester_id) : `S${s.semester}`)}</TableCell>
-                          <TableCell className="text-right">₹{Number(s.total_fees).toLocaleString('en-IN')}</TableCell>
-                          <TableCell className="text-right">₹{(Number(s.paid_fees) + s.discount).toLocaleString('en-IN')}</TableCell>
-                          <TableCell className="text-right font-semibold text-destructive">₹{s.pending.toLocaleString('en-IN')}</TableCell>
-                          <TableCell>{getTag(s.pending)}</TableCell>
-                          <TableCell className="text-xs">{s.phone || s.email || '-'}</TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {paginated.map(s => (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-medium">{s.name}</TableCell>
+                        <TableCell>{s.course_id ? getCourseName(s.course_id) : s.course}</TableCell>
+                        <TableCell>{s.class_id ? getClassName(s.class_id) : '-'}</TableCell>
+                        <TableCell>{s.section_id ? getSectionName(s.section_id) : '-'}</TableCell>
+                        <TableCell className="text-right">₹{Number(s.total_fees).toLocaleString('en-IN')}</TableCell>
+                        <TableCell className="text-right">₹{(Number(s.paid_fees) + s.discount).toLocaleString('en-IN')}</TableCell>
+                        <TableCell className="text-right font-semibold text-destructive">₹{s.pending.toLocaleString('en-IN')}</TableCell>
+                        <TableCell>{getTag(s.pending)}</TableCell>
+                        <TableCell className="text-xs">{s.phone || s.email || '-'}</TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
             ) : <p className="text-sm text-muted-foreground text-center py-10">No defaulters found 🎉</p>}
 
-            {/* Pagination */}
             {defaulters.length > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t mt-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
