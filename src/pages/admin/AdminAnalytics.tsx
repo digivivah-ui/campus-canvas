@@ -4,28 +4,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, GraduationCap, AlertTriangle, TrendingUp, School } from 'lucide-react';
+import { Users, GraduationCap, AlertTriangle, TrendingUp } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useCourseStructure } from '@/hooks/useCourseStructure';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useInstitution } from '@/hooks/useInstitution';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', '#6366f1', '#f59e0b', '#10b981', '#ef4444'];
 
 export default function AdminAnalytics() {
   const navigate = useNavigate();
-  const {
-    courses, years, classes,
-    collegeCourses, schoolCourses,
-    getCourseName, getYearName, getClassName, getCourseType,
-  } = useCourseStructure();
+  const { classes, schoolCourses, getCourseName, getClassName } = useCourseStructure();
 
-  const { institutionType } = useInstitution();
-  const institutionFilter = institutionType;
   const [filterCourse, setFilterCourse] = useState<string>('all');
-  const [filterSub, setFilterSub] = useState<string>('all');
+  const [filterClass, setFilterClass] = useState<string>('all');
   const [academicYear, setAcademicYear] = useState<string>(String(new Date().getFullYear()));
 
   const { data: students = [] } = useQuery({
@@ -55,57 +48,31 @@ export default function AdminAnalytics() {
     },
   });
 
-  // Extract available academic years from admission dates
   const availableYears = useMemo(() => {
     const yearSet = new Set<number>();
-    students.forEach(s => {
-      if (s.admission_date) yearSet.add(new Date(s.admission_date).getFullYear());
-    });
-    fees.forEach(f => {
-      if (f.date) yearSet.add(new Date(f.date).getFullYear());
-    });
+    students.forEach(s => { if (s.admission_date) yearSet.add(new Date(s.admission_date).getFullYear()); });
+    fees.forEach(f => { if (f.date) yearSet.add(new Date(f.date).getFullYear()); });
     const sorted = Array.from(yearSet).sort((a, b) => b - a);
     if (sorted.length === 0) sorted.push(new Date().getFullYear());
     return sorted;
   }, [students, fees]);
 
-  const filteredCourses = useMemo(() => {
-    if (institutionFilter === 'college') return collegeCourses;
-    return schoolCourses;
-  }, [institutionFilter, collegeCourses, schoolCourses]);
-
-  const subItems = useMemo(() => {
+  const classItems = useMemo(() => {
     if (filterCourse === 'all') return [];
-    const type = getCourseType(filterCourse);
-    if (type === 'college') return years.filter(y => y.course_id === filterCourse);
     return classes.filter(cl => cl.course_id === filterCourse);
-  }, [filterCourse, years, classes, getCourseType]);
+  }, [filterCourse, classes]);
 
-  // Filter students by institution, course, sub, and academic year
   const filtered = useMemo(() => {
     let list = students;
-
-    // Academic year filter: students admitted in or before selected year
     const yr = Number(academicYear);
-    list = list.filter(s => {
-      if (!s.admission_date) return true;
-      return new Date(s.admission_date).getFullYear() <= yr;
-    });
-
-    const courseIds = new Set((institutionFilter === 'college' ? collegeCourses : schoolCourses).map(c => c.id));
+    list = list.filter(s => !s.admission_date || new Date(s.admission_date).getFullYear() <= yr);
+    const courseIds = new Set(schoolCourses.map(c => c.id));
     list = list.filter(s => s.course_id && courseIds.has(s.course_id));
-    if (filterCourse !== 'all') {
-      list = list.filter(s => s.course_id === filterCourse);
-    }
-    if (filterSub !== 'all') {
-      const type = filterCourse !== 'all' ? getCourseType(filterCourse) : null;
-      if (type === 'college') list = list.filter(s => s.year_id === filterSub);
-      else if (type === 'school') list = list.filter(s => s.class_id === filterSub);
-    }
+    if (filterCourse !== 'all') list = list.filter(s => s.course_id === filterCourse);
+    if (filterClass !== 'all') list = list.filter(s => s.class_id === filterClass);
     return list;
-  }, [students, institutionFilter, filterCourse, filterSub, collegeCourses, schoolCourses, getCourseType, academicYear]);
+  }, [students, schoolCourses, filterCourse, filterClass, academicYear]);
 
-  // Filter fees by academic year AND by filtered student ids
   const filteredStudentIds = useMemo(() => new Set(filtered.map(s => s.id)), [filtered]);
 
   const filteredFees = useMemo(() => {
@@ -117,11 +84,11 @@ export default function AdminAnalytics() {
     });
   }, [fees, academicYear, filteredStudentIds]);
 
-  const filteredDiscounts = useMemo(() => {
-    return discounts.filter(d => filteredStudentIds.has(d.student_id));
-  }, [discounts, filteredStudentIds]);
+  const filteredDiscounts = useMemo(
+    () => discounts.filter(d => filteredStudentIds.has(d.student_id)),
+    [discounts, filteredStudentIds],
+  );
 
-  // Compute discount totals per student
   const discountByStudent = useMemo(() => {
     const map: Record<string, number> = {};
     filteredDiscounts.forEach(d => { map[d.student_id] = (map[d.student_id] || 0) + Number(d.amount); });
@@ -152,7 +119,8 @@ export default function AdminAnalytics() {
       const month = format(parseISO(s.admission_date), 'yyyy-MM');
       map[month] = (map[month] || 0) + 1;
     });
-    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([month, count]) => ({ month: format(parseISO(month + '-01'), 'MMM yyyy'), count }));
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, count]) => ({ month: format(parseISO(month + '-01'), 'MMM yyyy'), count }));
   }, [filtered]);
 
   const courseDistData = useMemo(() => {
@@ -161,41 +129,33 @@ export default function AdminAnalytics() {
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [filtered, getCourseName]);
 
-  const subDistData = useMemo(() => {
+  const classDistData = useMemo(() => {
     const map: Record<string, number> = {};
-    const showSchool = institutionFilter === 'school' || (filterCourse !== 'all' && getCourseType(filterCourse) === 'school');
     filtered.forEach(s => {
-      if (showSchool) {
-        const name = s.class_id ? getClassName(s.class_id) : '-';
-        map[name] = (map[name] || 0) + 1;
-      } else {
-        const name = s.year_id ? getYearName(s.year_id) : `Year ${s.year}`;
-        map[name] = (map[name] || 0) + 1;
-      }
+      const name = s.class_id ? getClassName(s.class_id) : '-';
+      map[name] = (map[name] || 0) + 1;
     });
-    return { data: Object.entries(map).map(([name, value]) => ({ name, value })), label: showSchool ? 'Students by Class' : 'Students by Year' };
-  }, [filtered, institutionFilter, filterCourse, getCourseType, getClassName, getYearName]);
-
-  const subLabel = filterCourse !== 'all' && getCourseType(filterCourse) === 'school' ? 'Class' : 'Year';
+    return Object.entries(map).map(([name, value]) => ({ name, value }));
+  }, [filtered, getClassName]);
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         {/* Filters */}
         <div className="flex flex-wrap gap-3 items-center">
-          <Select value={filterCourse} onValueChange={v => { setFilterCourse(v); setFilterSub('all'); }}>
+          <Select value={filterCourse} onValueChange={v => { setFilterCourse(v); setFilterClass('all'); }}>
             <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Courses" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Courses</SelectItem>
-              {filteredCourses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              {schoolCourses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          {filterCourse !== 'all' && subItems.length > 0 && (
-            <Select value={filterSub} onValueChange={setFilterSub}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder={`All ${subLabel}s`} /></SelectTrigger>
+          {filterCourse !== 'all' && classItems.length > 0 && (
+            <Select value={filterClass} onValueChange={setFilterClass}>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Classes" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All {subLabel}s</SelectItem>
-                {subItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
+                <SelectItem value="all">All Classes</SelectItem>
+                {classItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
               </SelectContent>
             </Select>
           )}
@@ -207,19 +167,13 @@ export default function AdminAnalytics() {
           </Select>
         </div>
 
-        <p className="text-sm text-muted-foreground">Showing: {institutionFilter === 'college' ? 'College' : 'School'} · {academicYear}</p>
+        <p className="text-sm text-muted-foreground">Academic Year: {academicYear}</p>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <SummaryCard icon={Users} label="Total Students" value={totalStudents} />
           <SummaryCard icon={TrendingUp} label="Fees Collected" value={`₹${totalCollected.toLocaleString('en-IN')}`} />
-          <SummaryCard
-            icon={AlertTriangle}
-            label="Defaulters"
-            value={totalDefaulters}
-            variant="destructive"
-            onClick={() => navigate('/admin/defaulters')}
-          />
+          <SummaryCard icon={AlertTriangle} label="Defaulters" value={totalDefaulters} variant="destructive" onClick={() => navigate('/admin/defaulters')} />
           <SummaryCard icon={GraduationCap} label="Pending Fees" value={`₹${totalPending.toLocaleString('en-IN')}`} />
         </div>
 
@@ -259,18 +213,17 @@ export default function AdminAnalytics() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle className="text-base">{subDistData.label}</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Students by Class</CardTitle></CardHeader>
             <CardContent>
-              {subDistData.data.length > 0 ? (
+              {classDistData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={subDistData.data}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" fontSize={12} /><YAxis fontSize={12} allowDecimals={false} /><Tooltip /><Bar dataKey="value" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} /></BarChart>
+                  <BarChart data={classDistData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" fontSize={12} /><YAxis fontSize={12} allowDecimals={false} /><Tooltip /><Bar dataKey="value" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} /></BarChart>
                 </ResponsiveContainer>
               ) : <p className="text-sm text-muted-foreground text-center py-10">No student data yet.</p>}
             </CardContent>
           </Card>
         </div>
 
-        {/* Link to Defaulters instead of inline table */}
         <Card>
           <CardContent className="flex items-center justify-between p-5">
             <div>
