@@ -55,6 +55,7 @@ const navGroups: NavGroup[] = [
     label: 'Communication',
     icon: MessageSquare,
     items: [
+      { href: '/admin/notifications', label: 'Notifications', icon: MessageSquare },
       { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
     ],
   },
