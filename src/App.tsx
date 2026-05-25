@@ -85,8 +85,17 @@ const App = () => (
               <Route path="/admin/course-structure" element={<AdminCourseStructure />} />
               <Route path="/admin/students" element={<AdminStudents />} />
               <Route path="/admin/defaulters" element={<AdminDefaulters />} />
+              <Route path="/admin/notifications" element={<AdminNotifications />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
-              
+
+              {/* Parent Portal */}
+              <Route path="/parent/login" element={<ParentLogin />} />
+              <Route path="/parent/dashboard" element={<RequireRole role="parent" loginPath="/parent/login"><ParentDashboard /></RequireRole>} />
+
+              {/* Student Portal */}
+              <Route path="/student/login" element={<StudentLogin />} />
+              <Route path="/student/dashboard" element={<RequireRole role="student" loginPath="/student/login"><StudentDashboard /></RequireRole>} />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
