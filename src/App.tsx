@@ -36,6 +36,12 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminCourseStructure from "./pages/admin/AdminCourseStructure";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminDefaulters from "./pages/admin/AdminDefaulters";
+import AdminNotifications from "./pages/admin/AdminNotifications";
+import ParentLogin from "./pages/parent/ParentLogin";
+import ParentDashboard from "./pages/parent/ParentDashboard";
+import StudentLogin from "./pages/student/StudentLogin";
+import StudentDashboard from "./pages/student/StudentDashboard";
+import { RequireRole } from "@/components/RequireRole";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 
 const queryClient = new QueryClient();
