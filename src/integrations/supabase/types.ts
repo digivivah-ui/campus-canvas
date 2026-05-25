@@ -47,6 +47,33 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          remarks: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          remarks?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          remarks?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       classes: {
         Row: {
           course_id: string
@@ -527,6 +554,71 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_reads: {
+        Row: {
+          id: string
+          notification_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notification_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notification_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_reads_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          message: string
+          section_id: string | null
+          student_id: string | null
+          target_type: string
+          title: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message: string
+          section_id?: string | null
+          student_id?: string | null
+          target_type: string
+          title: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message?: string
+          section_id?: string | null
+          student_id?: string | null
+          target_type?: string
+          title?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -786,6 +878,7 @@ export type Database = {
           admission_date: string
           admission_number: string | null
           admission_status: string
+          auth_user_id: string | null
           class_id: string | null
           course: string
           course_id: string | null
@@ -797,10 +890,16 @@ export type Database = {
           id: string
           name: string
           paid_fees: number
+          parent_auth_user_id: string | null
+          parent_email: string | null
+          parent_name: string | null
+          parent_phone: string | null
           phone: string | null
+          profile_image_url: string | null
           section_id: string | null
           semester: number
           semester_id: string | null
+          student_login_email: string | null
           total_fees: number
           updated_at: string
           year: number
@@ -811,6 +910,7 @@ export type Database = {
           admission_date?: string
           admission_number?: string | null
           admission_status?: string
+          auth_user_id?: string | null
           class_id?: string | null
           course: string
           course_id?: string | null
@@ -822,10 +922,16 @@ export type Database = {
           id?: string
           name: string
           paid_fees?: number
+          parent_auth_user_id?: string | null
+          parent_email?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
           phone?: string | null
+          profile_image_url?: string | null
           section_id?: string | null
           semester?: number
           semester_id?: string | null
+          student_login_email?: string | null
           total_fees?: number
           updated_at?: string
           year?: number
@@ -836,6 +942,7 @@ export type Database = {
           admission_date?: string
           admission_number?: string | null
           admission_status?: string
+          auth_user_id?: string | null
           class_id?: string | null
           course?: string
           course_id?: string | null
@@ -847,10 +954,16 @@ export type Database = {
           id?: string
           name?: string
           paid_fees?: number
+          parent_auth_user_id?: string | null
+          parent_email?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
           phone?: string | null
+          profile_image_url?: string | null
           section_id?: string | null
           semester?: number
           semester_id?: string | null
+          student_login_email?: string | null
           total_fees?: number
           updated_at?: string
           year?: number
@@ -938,6 +1051,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_student_ids: { Args: never; Returns: string[] }
+      current_user_class_ids: { Args: never; Returns: string[] }
+      current_user_section_ids: { Args: never; Returns: string[] }
       generate_admission_number: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -949,7 +1065,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "member"
+      app_role: "admin" | "member" | "parent" | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1077,7 +1193,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "member"],
+      app_role: ["admin", "member", "parent", "student"],
     },
   },
 } as const

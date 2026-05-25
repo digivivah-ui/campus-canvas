@@ -36,6 +36,12 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminCourseStructure from "./pages/admin/AdminCourseStructure";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminDefaulters from "./pages/admin/AdminDefaulters";
+import AdminNotifications from "./pages/admin/AdminNotifications";
+import ParentLogin from "./pages/parent/ParentLogin";
+import ParentDashboard from "./pages/parent/ParentDashboard";
+import StudentLogin from "./pages/student/StudentLogin";
+import StudentDashboard from "./pages/student/StudentDashboard";
+import { RequireRole } from "@/components/RequireRole";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 
 const queryClient = new QueryClient();
@@ -79,8 +85,17 @@ const App = () => (
               <Route path="/admin/course-structure" element={<AdminCourseStructure />} />
               <Route path="/admin/students" element={<AdminStudents />} />
               <Route path="/admin/defaulters" element={<AdminDefaulters />} />
+              <Route path="/admin/notifications" element={<AdminNotifications />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
-              
+
+              {/* Parent Portal */}
+              <Route path="/parent/login" element={<ParentLogin />} />
+              <Route path="/parent/dashboard" element={<RequireRole role="parent" loginPath="/parent/login"><ParentDashboard /></RequireRole>} />
+
+              {/* Student Portal */}
+              <Route path="/student/login" element={<StudentLogin />} />
+              <Route path="/student/dashboard" element={<RequireRole role="student" loginPath="/student/login"><StudentDashboard /></RequireRole>} />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
