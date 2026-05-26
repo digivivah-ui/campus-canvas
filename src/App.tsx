@@ -38,9 +38,18 @@ import AdminStudents from "./pages/admin/AdminStudents";
 import AdminDefaulters from "./pages/admin/AdminDefaulters";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import ParentLogin from "./pages/parent/ParentLogin";
+import ParentShell from "./layouts/ParentShell";
 import ParentDashboard from "./pages/parent/ParentDashboard";
+import ParentFees from "./pages/parent/ParentFees";
+import ParentReceipts from "./pages/parent/ParentReceipts";
+import ParentAttendance from "./pages/parent/ParentAttendance";
+import ParentNotices from "./pages/parent/ParentNotices";
 import StudentLogin from "./pages/student/StudentLogin";
+import StudentShell from "./layouts/StudentShell";
 import StudentDashboard from "./pages/student/StudentDashboard";
+import StudentAttendance from "./pages/student/StudentAttendance";
+import StudentFees from "./pages/student/StudentFees";
+import StudentNotices from "./pages/student/StudentNotices";
 import { RequireRole } from "@/components/RequireRole";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 
@@ -90,11 +99,22 @@ const App = () => (
 
               {/* Parent Portal */}
               <Route path="/parent/login" element={<ParentLogin />} />
-              <Route path="/parent/dashboard" element={<RequireRole role="parent" loginPath="/parent/login"><ParentDashboard /></RequireRole>} />
+              <Route path="/parent" element={<ParentShell />}>
+                <Route path="dashboard" element={<ParentDashboard />} />
+                <Route path="fees" element={<ParentFees />} />
+                <Route path="receipts" element={<ParentReceipts />} />
+                <Route path="attendance" element={<ParentAttendance />} />
+                <Route path="notices" element={<ParentNotices />} />
+              </Route>
 
               {/* Student Portal */}
               <Route path="/student/login" element={<StudentLogin />} />
-              <Route path="/student/dashboard" element={<RequireRole role="student" loginPath="/student/login"><StudentDashboard /></RequireRole>} />
+              <Route path="/student" element={<StudentShell />}>
+                <Route path="dashboard" element={<StudentDashboard />} />
+                <Route path="attendance" element={<StudentAttendance />} />
+                <Route path="fees" element={<StudentFees />} />
+                <Route path="notices" element={<StudentNotices />} />
+              </Route>
 
               <Route path="*" element={<NotFound />} />
             </Routes>
