@@ -13,7 +13,7 @@ export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signOut, user } = useAuth();
+  const { signIn, user } = useAuth();
   const { role, loading: roleLoading } = useRole();
   const navigate = useNavigate();
   const { toast } = useToast();
