@@ -2,20 +2,27 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GraduationCap, LogIn } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useRole } from '@/hooks/useRole';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { roleHome } from '@/lib/roleRoutes';
 
 export default function StudentLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, user } = useAuth();
+  const { role, loading: roleLoading } = useRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => { if (user) navigate('/student/dashboard'); }, [user, navigate]);
+  useEffect(() => {
+    if (!user || roleLoading) return;
+    if (role === 'student') navigate('/student/dashboard', { replace: true });
+    else if (role) navigate(roleHome(role), { replace: true });
+  }, [user, role, roleLoading, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,8 +30,9 @@ export default function StudentLogin() {
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
-    else navigate('/student/dashboard');
+    // Redirect handled by role effect.
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent/15 via-background to-primary/10 p-4">

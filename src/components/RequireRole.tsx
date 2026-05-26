@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useRole, AppRole } from '@/hooks/useRole';
 import { PageLoader } from '@/components/common/LoadingSpinner';
+import { roleHome } from '@/lib/roleRoutes';
 
 interface Props {
   role: Exclude<AppRole, null | 'member'>;
@@ -9,10 +10,20 @@ interface Props {
   children: ReactNode;
 }
 
+/**
+ * Strict role guard. Admin does NOT bypass — each role is isolated
+ * to its own application shell. Mismatched roles are routed to their own home.
+ */
 export function RequireRole({ role, loginPath, children }: Props) {
   const { role: currentRole, user, loading } = useRole();
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to={loginPath} replace />;
-  if (currentRole !== role && currentRole !== 'admin') return <Navigate to={loginPath} replace />;
+  if (currentRole !== role) {
+    // Authenticated as a different role — send them to their own home.
+    if (currentRole === 'admin' || currentRole === 'parent' || currentRole === 'student') {
+      return <Navigate to={roleHome(currentRole)} replace />;
+    }
+    return <Navigate to={loginPath} replace />;
+  }
   return <>{children}</>;
 }

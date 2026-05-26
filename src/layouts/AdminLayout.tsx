@@ -1,14 +1,16 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useLocation, Navigate } from 'react-router-dom';
 import {
   Home, FileText, Building2, Users, Calendar, Image, MessageSquare, LogOut,
   GraduationCap, Menu, Settings, BarChart3, Globe, Video, BookOpen,
   IndianRupee, PieChart, UserCheck, AlertTriangle, ChevronDown, ChevronRight, School,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useRole } from '@/hooks/useRole';
 import { Button } from '@/components/ui/button';
 import { PageLoader } from '@/components/common/LoadingSpinner';
 import { cn } from '@/lib/utils';
+import { roleHome } from '@/lib/roleRoutes';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -65,6 +67,7 @@ const allItems = navGroups.flatMap(g => g.items);
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, isAdmin, isLoading, signOut } = useAuth();
+  const { role, loading: roleLoading } = useRole();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -92,8 +95,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     if (!isLoading && !user) navigate('/admin');
   }, [user, isLoading, navigate]);
 
-  if (isLoading) return <PageLoader />;
+  if (isLoading || roleLoading) return <PageLoader />;
   if (!user) return null;
+  // Strict role isolation: non-admin authenticated users must not see the admin shell.
+  if (role && role !== 'admin') return <Navigate to={roleHome(role)} replace />;
+  if (!isAdmin) return <Navigate to="/admin" replace />;
 
   const handleSignOut = async () => { await signOut(); navigate('/admin'); };
   const toggleGroup = (id: string) => setOpenGroups(p => ({ ...p, [id]: !p[id] }));
