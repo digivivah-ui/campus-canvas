@@ -49,26 +49,35 @@ export type Database = {
       }
       attendance: {
         Row: {
+          class_id: string | null
           created_at: string
           date: string
           id: string
+          marked_by: string | null
           remarks: string | null
+          section_id: string | null
           status: string
           student_id: string
         }
         Insert: {
+          class_id?: string | null
           created_at?: string
           date?: string
           id?: string
+          marked_by?: string | null
           remarks?: string | null
+          section_id?: string | null
           status?: string
           student_id: string
         }
         Update: {
+          class_id?: string | null
           created_at?: string
           date?: string
           id?: string
+          marked_by?: string | null
           remarks?: string | null
+          section_id?: string | null
           status?: string
           student_id?: string
         }
