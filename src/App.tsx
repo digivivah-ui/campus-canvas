@@ -36,6 +36,7 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminCourseStructure from "./pages/admin/AdminCourseStructure";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminDefaulters from "./pages/admin/AdminDefaulters";
+import AdminAttendance from "./pages/admin/AdminAttendance";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import ParentLogin from "./pages/parent/ParentLogin";
 import ParentShell from "./layouts/ParentShell";
@@ -94,6 +95,7 @@ const App = () => (
               <Route path="/admin/course-structure" element={<AdminCourseStructure />} />
               <Route path="/admin/students" element={<AdminStudents />} />
               <Route path="/admin/defaulters" element={<AdminDefaulters />} />
+              <Route path="/admin/attendance" element={<AdminAttendance />} />
               <Route path="/admin/notifications" element={<AdminNotifications />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
 
