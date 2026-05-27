@@ -4,6 +4,7 @@ import {
   Home, FileText, Building2, Users, Calendar, Image, MessageSquare, LogOut,
   GraduationCap, Menu, Settings, BarChart3, Globe, Video, BookOpen,
   IndianRupee, PieChart, UserCheck, AlertTriangle, ChevronDown, ChevronRight, School,
+  CalendarCheck,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
@@ -47,6 +48,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/admin/course-structure', label: 'Course Structure', icon: GraduationCap },
       { href: '/admin/students', label: 'Students', icon: UserCheck },
+      { href: '/admin/attendance', label: 'Attendance', icon: CalendarCheck },
       { href: '/admin/finance', label: 'Finance', icon: IndianRupee },
       { href: '/admin/analytics', label: 'Analytics', icon: PieChart },
       { href: '/admin/defaulters', label: 'Defaulters', icon: AlertTriangle },

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useParentCtx } from '@/contexts/ParentContext';
 import { AttendanceSummary } from '@/components/portal/AttendanceSummary';
+import { AttendanceCalendar } from '@/components/portal/AttendanceCalendar';
 import { AttendanceList } from '@/components/portal/AttendanceList';
 import { EmptyState } from '@/components/portal/EmptyState';
 import { PortalSkeleton } from '@/components/portal/PortalSkeleton';
@@ -15,7 +16,7 @@ export default function ParentAttendance() {
 
   useEffect(() => {
     if (!selected) return;
-    supabase.from('attendance').select('id,date,status,remarks').eq('student_id', selected.id).order('date', { ascending: false }).limit(90)
+    supabase.from('attendance').select('id,date,status,remarks').eq('student_id', selected.id).order('date', { ascending: false }).limit(180)
       .then(({ data }) => setRecords((data ?? []) as Att[]));
   }, [selected?.id]);
 
@@ -25,11 +26,12 @@ export default function ParentAttendance() {
   return (
     <>
       <AttendanceSummary records={records} />
+      <AttendanceCalendar records={records} />
       <h3 className="font-semibold text-sm px-1">Recent Days</h3>
       {records.length === 0 ? (
         <EmptyState icon={CalendarCheck} title="No attendance yet" description="Daily attendance will appear here." />
       ) : (
-        <AttendanceList records={records} />
+        <AttendanceList records={records.slice(0, 20)} />
       )}
     </>
   );
