@@ -1,12 +1,13 @@
 import { Card } from '@/components/ui/card';
-import { Check, X, Clock } from 'lucide-react';
+import { Check, X, Clock, CalendarOff } from 'lucide-react';
 
 interface Att { id: string; date: string; status: string; remarks?: string | null }
 
 const meta: Record<string, { label: string; cls: string; icon: any }> = {
-  present: { label: 'Present', cls: 'bg-green-50 text-green-700 border-green-200', icon: Check },
-  absent: { label: 'Absent', cls: 'bg-red-50 text-red-700 border-red-200', icon: X },
-  late: { label: 'Late', cls: 'bg-amber-50 text-amber-700 border-amber-200', icon: Clock },
+  present:  { label: 'Present',  cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: Check },
+  absent:   { label: 'Absent',   cls: 'bg-rose-50 text-rose-700 border-rose-200', icon: X },
+  leave:    { label: 'Leave',    cls: 'bg-amber-50 text-amber-700 border-amber-200', icon: CalendarOff },
+  half_day: { label: 'Half Day', cls: 'bg-sky-50 text-sky-700 border-sky-200', icon: Clock },
 };
 
 export function AttendanceList({ records }: { records: Att[] }) {
