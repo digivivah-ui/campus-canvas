@@ -100,6 +100,8 @@ const App = () => (
               <Route path="/admin/students" element={<AdminStudents />} />
               <Route path="/admin/defaulters" element={<AdminDefaulters />} />
               <Route path="/admin/attendance" element={<AdminAttendance />} />
+              <Route path="/admin/exams" element={<AdminExams />} />
+              <Route path="/admin/results" element={<AdminResults />} />
               <Route path="/admin/notifications" element={<AdminNotifications />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
 
@@ -110,7 +112,18 @@ const App = () => (
                 <Route path="fees" element={<ParentFees />} />
                 <Route path="receipts" element={<ParentReceipts />} />
                 <Route path="attendance" element={<ParentAttendance />} />
+                <Route path="results" element={<ParentResults />} />
                 <Route path="notices" element={<ParentNotices />} />
+              </Route>
+
+              {/* Student Portal */}
+              <Route path="/student/login" element={<StudentLogin />} />
+              <Route path="/student" element={<StudentShell />}>
+                <Route path="dashboard" element={<StudentDashboard />} />
+                <Route path="attendance" element={<StudentAttendance />} />
+                <Route path="fees" element={<StudentFees />} />
+                <Route path="results" element={<StudentResults />} />
+                <Route path="notices" element={<StudentNotices />} />
               </Route>
 
               {/* Student Portal */}
