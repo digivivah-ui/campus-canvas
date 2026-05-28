@@ -37,6 +37,8 @@ import AdminCourseStructure from "./pages/admin/AdminCourseStructure";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminDefaulters from "./pages/admin/AdminDefaulters";
 import AdminAttendance from "./pages/admin/AdminAttendance";
+import AdminExams from "./pages/admin/AdminExams";
+import AdminResults from "./pages/admin/AdminResults";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import ParentLogin from "./pages/parent/ParentLogin";
 import ParentShell from "./layouts/ParentShell";
@@ -44,12 +46,14 @@ import ParentDashboard from "./pages/parent/ParentDashboard";
 import ParentFees from "./pages/parent/ParentFees";
 import ParentReceipts from "./pages/parent/ParentReceipts";
 import ParentAttendance from "./pages/parent/ParentAttendance";
+import ParentResults from "./pages/parent/ParentResults";
 import ParentNotices from "./pages/parent/ParentNotices";
 import StudentLogin from "./pages/student/StudentLogin";
 import StudentShell from "./layouts/StudentShell";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentAttendance from "./pages/student/StudentAttendance";
 import StudentFees from "./pages/student/StudentFees";
+import StudentResults from "./pages/student/StudentResults";
 import StudentNotices from "./pages/student/StudentNotices";
 import { RequireRole } from "@/components/RequireRole";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
@@ -96,6 +100,8 @@ const App = () => (
               <Route path="/admin/students" element={<AdminStudents />} />
               <Route path="/admin/defaulters" element={<AdminDefaulters />} />
               <Route path="/admin/attendance" element={<AdminAttendance />} />
+              <Route path="/admin/exams" element={<AdminExams />} />
+              <Route path="/admin/results" element={<AdminResults />} />
               <Route path="/admin/notifications" element={<AdminNotifications />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
 
@@ -106,6 +112,7 @@ const App = () => (
                 <Route path="fees" element={<ParentFees />} />
                 <Route path="receipts" element={<ParentReceipts />} />
                 <Route path="attendance" element={<ParentAttendance />} />
+                <Route path="results" element={<ParentResults />} />
                 <Route path="notices" element={<ParentNotices />} />
               </Route>
 
@@ -115,8 +122,11 @@ const App = () => (
                 <Route path="dashboard" element={<StudentDashboard />} />
                 <Route path="attendance" element={<StudentAttendance />} />
                 <Route path="fees" element={<StudentFees />} />
+                <Route path="results" element={<StudentResults />} />
                 <Route path="notices" element={<StudentNotices />} />
               </Route>
+
+
 
               <Route path="*" element={<NotFound />} />
             </Routes>

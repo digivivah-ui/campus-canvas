@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { Home, IndianRupee, Receipt, CalendarCheck, Bell } from 'lucide-react';
+import { Home, IndianRupee, Receipt, CalendarCheck, Bell, Award } from 'lucide-react';
 import { RequireRole } from '@/components/RequireRole';
 import { PortalLayout } from '@/layouts/PortalLayout';
 import { ParentProvider, useParentCtx } from '@/contexts/ParentContext';
@@ -7,8 +7,8 @@ import { ParentProvider, useParentCtx } from '@/contexts/ParentContext';
 const navItems = [
   { to: '/parent/dashboard', label: 'Home', icon: Home },
   { to: '/parent/fees', label: 'Fees', icon: IndianRupee },
-  { to: '/parent/receipts', label: 'Receipts', icon: Receipt },
   { to: '/parent/attendance', label: 'Attend', icon: CalendarCheck },
+  { to: '/parent/results', label: 'Results', icon: Award },
   { to: '/parent/notices', label: 'Notices', icon: Bell },
 ];
 
