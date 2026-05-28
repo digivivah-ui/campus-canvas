@@ -283,6 +283,84 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_subjects: {
+        Row: {
+          exam_id: string
+          id: string
+          max_marks: number
+          passing_marks: number
+          subject_id: string
+        }
+        Insert: {
+          exam_id: string
+          id?: string
+          max_marks?: number
+          passing_marks?: number
+          subject_id: string
+        }
+        Update: {
+          exam_id?: string
+          id?: string
+          max_marks?: number
+          passing_marks?: number
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_subjects_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_subjects_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exams: {
+        Row: {
+          academic_year: string
+          class_id: string
+          created_at: string
+          end_date: string | null
+          exam_type: string
+          id: string
+          is_published: boolean
+          name: string
+          section_id: string | null
+          start_date: string | null
+        }
+        Insert: {
+          academic_year?: string
+          class_id: string
+          created_at?: string
+          end_date?: string | null
+          exam_type?: string
+          id?: string
+          is_published?: boolean
+          name: string
+          section_id?: string | null
+          start_date?: string | null
+        }
+        Update: {
+          academic_year?: string
+          class_id?: string
+          created_at?: string
+          end_date?: string | null
+          exam_type?: string
+          id?: string
+          is_published?: boolean
+          name?: string
+          section_id?: string | null
+          start_date?: string | null
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
@@ -517,6 +595,54 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      marks: {
+        Row: {
+          created_at: string
+          exam_id: string
+          id: string
+          marks_obtained: number
+          remarks: string | null
+          student_id: string
+          subject_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          exam_id: string
+          id?: string
+          marks_obtained?: number
+          remarks?: string | null
+          student_id: string
+          subject_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          exam_id?: string
+          id?: string
+          marks_obtained?: number
+          remarks?: string | null
+          student_id?: string
+          subject_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marks_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       members: {
         Row: {
@@ -1001,6 +1127,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subjects: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
