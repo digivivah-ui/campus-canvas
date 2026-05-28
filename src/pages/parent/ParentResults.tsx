@@ -11,7 +11,7 @@ export default function ParentResults() {
   if (!selected) return <EmptyState icon={Users} title="No child linked" />;
   return (
     <div className="space-y-3">
-      {children.length > 1 && <ChildSwitcher children={children} selectedId={selectedId} onChange={setSelectedId} />}
+      {children.length > 1 && <ChildSwitcher children={children} selectedId={selectedId} onSelect={setSelectedId} />}
       <ResultsView
         studentId={selected.id}
         studentName={selected.name}
