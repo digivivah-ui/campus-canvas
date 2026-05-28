@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { Home, CalendarCheck, IndianRupee, Bell } from 'lucide-react';
+import { Home, CalendarCheck, IndianRupee, Bell, Award } from 'lucide-react';
 import { RequireRole } from '@/components/RequireRole';
 import { PortalLayout } from '@/layouts/PortalLayout';
 import { StudentProvider, useStudentCtx } from '@/contexts/StudentContext';
@@ -7,6 +7,7 @@ import { StudentProvider, useStudentCtx } from '@/contexts/StudentContext';
 const navItems = [
   { to: '/student/dashboard', label: 'Home', icon: Home },
   { to: '/student/attendance', label: 'Attend', icon: CalendarCheck },
+  { to: '/student/results', label: 'Results', icon: Award },
   { to: '/student/fees', label: 'Fees', icon: IndianRupee },
   { to: '/student/notices', label: 'Notices', icon: Bell },
 ];
