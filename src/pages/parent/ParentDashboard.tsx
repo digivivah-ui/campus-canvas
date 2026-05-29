@@ -9,7 +9,7 @@ import { ChildSwitcher } from '@/components/portal/ChildSwitcher';
 import { PortalSkeleton } from '@/components/portal/PortalSkeleton';
 import { EmptyState } from '@/components/portal/EmptyState';
 import { Card } from '@/components/ui/card';
-import { Users, Bell, ChevronRight, Receipt } from 'lucide-react';
+import { Users, Bell, ChevronRight, Receipt, BookOpen, Megaphone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function ParentDashboard() {
@@ -18,22 +18,29 @@ export default function ParentDashboard() {
   const [recentFees, setRecentFees] = useState<{ id: string; amount: number; date: string }[]>([]);
   const [unreadNotices, setUnreadNotices] = useState(0);
   const [latestNotice, setLatestNotice] = useState<{ title: string; created_at: string } | null>(null);
+  const [upcomingHw, setUpcomingHw] = useState<{ title: string; subject: string; due_date: string } | null>(null);
+  const [latestAnnouncement, setLatestAnnouncement] = useState<{ title: string } | null>(null);
 
   useEffect(() => {
     if (!selectedId || !selected) return;
     (async () => {
-      const [{ data: a }, { data: f }, { data: n }, { data: r }] = await Promise.all([
+      const today = new Date().toISOString().slice(0, 10);
+      const [{ data: a }, { data: f }, { data: n }, { data: r }, { data: hw }, { data: ann }] = await Promise.all([
         supabase.from('attendance').select('status').eq('student_id', selectedId).order('date', { ascending: false }).limit(60),
         supabase.from('fees_collection').select('id,amount,date').eq('student_id', selectedId).order('date', { ascending: false }).limit(3),
-        supabase.from('notifications').select('id,title,created_at').order('created_at', { ascending: false }).limit(10),
+        supabase.from('notices').select('id,title,publish_date').order('publish_date', { ascending: false }).limit(10),
         supabase.from('notification_reads').select('notification_id'),
+        supabase.from('homework').select('title,subject,due_date').gte('due_date', today).order('due_date', { ascending: true }).limit(1),
+        supabase.from('announcements').select('title').order('publish_date', { ascending: false }).limit(1),
       ]);
       setAttendance((a ?? []) as any);
       setRecentFees((f ?? []) as any);
       const notices = n ?? [];
       const readSet = new Set((r ?? []).map((x: any) => x.notification_id));
       setUnreadNotices(notices.filter((x: any) => !readSet.has(x.id)).length);
-      setLatestNotice(notices[0] ? { title: notices[0].title, created_at: notices[0].created_at } : null);
+      setLatestNotice(notices[0] ? { title: notices[0].title, created_at: notices[0].publish_date } : null);
+      setUpcomingHw(hw?.[0] ?? null);
+      setLatestAnnouncement(ann?.[0] ?? null);
     })();
   }, [selectedId, selected]);
 
