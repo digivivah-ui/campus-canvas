@@ -72,6 +72,32 @@ export default function StudentDashboard() {
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Card>
       </Link>
+
+      <Link to="/student/notices" className="block">
+        <Card className="p-4 flex items-center gap-3 active:bg-muted transition-colors">
+          <div className="p-2 rounded-lg bg-emerald-100"><BookOpen className="h-4 w-4 text-emerald-700" /></div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm">Upcoming Homework</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {upcomingHw ? `${upcomingHw.subject} • ${upcomingHw.title} (due ${new Date(upcomingHw.due_date).toLocaleDateString()})` : 'No pending homework'}
+            </p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </Card>
+      </Link>
+
+      {latestAnn && (
+        <Link to="/student/notices" className="block">
+          <Card className="p-4 flex items-center gap-3 active:bg-muted transition-colors">
+            <div className="p-2 rounded-lg bg-amber-100"><Megaphone className="h-4 w-4 text-amber-700" /></div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm">Latest Announcement</p>
+              <p className="text-xs text-muted-foreground truncate">{latestAnn}</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Card>
+        </Link>
+      )}
     </>
   );
 }
