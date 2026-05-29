@@ -40,6 +40,9 @@ import AdminAttendance from "./pages/admin/AdminAttendance";
 import AdminExams from "./pages/admin/AdminExams";
 import AdminResults from "./pages/admin/AdminResults";
 import AdminNotifications from "./pages/admin/AdminNotifications";
+import AdminNotices from "./pages/admin/AdminNotices";
+import AdminHomework from "./pages/admin/AdminHomework";
+import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import ParentLogin from "./pages/parent/ParentLogin";
 import ParentShell from "./layouts/ParentShell";
 import ParentDashboard from "./pages/parent/ParentDashboard";
@@ -103,6 +106,9 @@ const App = () => (
               <Route path="/admin/exams" element={<AdminExams />} />
               <Route path="/admin/results" element={<AdminResults />} />
               <Route path="/admin/notifications" element={<AdminNotifications />} />
+              <Route path="/admin/notices" element={<AdminNotices />} />
+              <Route path="/admin/homework" element={<AdminHomework />} />
+              <Route path="/admin/announcements" element={<AdminAnnouncements />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
 
               {/* Parent Portal */}

@@ -4,7 +4,7 @@ import {
   Home, FileText, Building2, Users, Calendar, Image, MessageSquare, LogOut,
   GraduationCap, Menu, Settings, BarChart3, Globe, Video, BookOpen,
   IndianRupee, PieChart, UserCheck, AlertTriangle, ChevronDown, ChevronRight, School,
-  CalendarCheck, ClipboardList, Award,
+  CalendarCheck, ClipboardList, Award, Bell, Megaphone,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
@@ -61,6 +61,9 @@ const navGroups: NavGroup[] = [
     label: 'Communication',
     icon: MessageSquare,
     items: [
+      { href: '/admin/notices', label: 'Notices', icon: Bell },
+      { href: '/admin/homework', label: 'Homework', icon: BookOpen },
+      { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
       { href: '/admin/notifications', label: 'Notifications', icon: MessageSquare },
       { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
     ],
