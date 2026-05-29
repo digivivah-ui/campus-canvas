@@ -1,8 +1,19 @@
-import { useAuth } from '@/hooks/useAuth';
-import { NotificationsList } from '@/components/portal/NotificationsList';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { NoticesFeed } from '@/components/portal/NoticesFeed';
+import { HomeworkFeed } from '@/components/portal/HomeworkFeed';
+import { AnnouncementsFeed } from '@/components/portal/AnnouncementsFeed';
 
 export default function ParentNotices() {
-  const { user } = useAuth();
-  if (!user) return null;
-  return <NotificationsList userId={user.id} />;
+  return (
+    <Tabs defaultValue="notices" className="w-full">
+      <TabsList className="grid grid-cols-3 w-full">
+        <TabsTrigger value="notices">Notices</TabsTrigger>
+        <TabsTrigger value="homework">Homework</TabsTrigger>
+        <TabsTrigger value="announcements">Updates</TabsTrigger>
+      </TabsList>
+      <TabsContent value="notices" className="mt-4"><NoticesFeed /></TabsContent>
+      <TabsContent value="homework" className="mt-4"><HomeworkFeed /></TabsContent>
+      <TabsContent value="announcements" className="mt-4"><AnnouncementsFeed /></TabsContent>
+    </Tabs>
+  );
 }

@@ -47,6 +47,36 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          banner_image_url: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          message: string
+          publish_date: string
+          title: string
+        }
+        Insert: {
+          banner_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message: string
+          publish_date?: string
+          title: string
+        }
+        Update: {
+          banner_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message?: string
+          publish_date?: string
+          title?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           class_id: string | null
@@ -596,6 +626,45 @@ export type Database = {
         }
         Relationships: []
       }
+      homework: {
+        Row: {
+          attachment_url: string | null
+          class_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string
+          id: string
+          section_id: string | null
+          subject: string
+          title: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          class_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date: string
+          id?: string
+          section_id?: string | null
+          subject: string
+          title: string
+        }
+        Update: {
+          attachment_url?: string | null
+          class_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          section_id?: string | null
+          subject?: string
+          title?: string
+        }
+        Relationships: []
+      }
       marks: {
         Row: {
           created_at: string
@@ -686,6 +755,51 @@ export type Database = {
           photo_url?: string | null
           role_type?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      notices: {
+        Row: {
+          attachment_url: string | null
+          class_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_important: boolean
+          message: string
+          publish_date: string
+          section_id: string | null
+          student_id: string | null
+          target_type: string
+          title: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_important?: boolean
+          message: string
+          publish_date?: string
+          section_id?: string | null
+          student_id?: string | null
+          target_type?: string
+          title: string
+        }
+        Update: {
+          attachment_url?: string | null
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_important?: boolean
+          message?: string
+          publish_date?: string
+          section_id?: string | null
+          student_id?: string | null
+          target_type?: string
+          title?: string
         }
         Relationships: []
       }

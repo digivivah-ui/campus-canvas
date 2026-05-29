@@ -9,26 +9,33 @@ import { PortalSkeleton } from '@/components/portal/PortalSkeleton';
 import { EmptyState } from '@/components/portal/EmptyState';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UserX, Bell, ChevronRight } from 'lucide-react';
+import { UserX, Bell, ChevronRight, BookOpen, Megaphone } from 'lucide-react';
 
 export default function StudentDashboard() {
   const { loading, student, classMap, sectionMap } = useStudentCtx();
   const [attendance, setAttendance] = useState<{ status: string }[]>([]);
   const [unread, setUnread] = useState(0);
   const [latest, setLatest] = useState<string | null>(null);
+  const [upcomingHw, setUpcomingHw] = useState<{ title: string; subject: string; due_date: string } | null>(null);
+  const [latestAnn, setLatestAnn] = useState<string | null>(null);
 
   useEffect(() => {
     if (!student) return;
     (async () => {
-      const [{ data: a }, { data: n }, { data: r }] = await Promise.all([
+      const today = new Date().toISOString().slice(0, 10);
+      const [{ data: a }, { data: n }, { data: r }, { data: hw }, { data: ann }] = await Promise.all([
         supabase.from('attendance').select('status').eq('student_id', student.id).order('date', { ascending: false }).limit(60),
-        supabase.from('notifications').select('id,title').order('created_at', { ascending: false }).limit(10),
+        supabase.from('notices').select('id,title').order('publish_date', { ascending: false }).limit(10),
         supabase.from('notification_reads').select('notification_id'),
+        supabase.from('homework').select('title,subject,due_date').gte('due_date', today).order('due_date', { ascending: true }).limit(1),
+        supabase.from('announcements').select('title').order('publish_date', { ascending: false }).limit(1),
       ]);
       setAttendance((a ?? []) as any);
       const read = new Set((r ?? []).map((x: any) => x.notification_id));
       setUnread((n ?? []).filter((x: any) => !read.has(x.id)).length);
       setLatest(n?.[0]?.title ?? null);
+      setUpcomingHw(hw?.[0] ?? null);
+      setLatestAnn(ann?.[0]?.title ?? null);
     })();
   }, [student?.id]);
 
@@ -65,6 +72,32 @@ export default function StudentDashboard() {
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Card>
       </Link>
+
+      <Link to="/student/notices" className="block">
+        <Card className="p-4 flex items-center gap-3 active:bg-muted transition-colors">
+          <div className="p-2 rounded-lg bg-emerald-100"><BookOpen className="h-4 w-4 text-emerald-700" /></div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm">Upcoming Homework</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {upcomingHw ? `${upcomingHw.subject} • ${upcomingHw.title} (due ${new Date(upcomingHw.due_date).toLocaleDateString()})` : 'No pending homework'}
+            </p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </Card>
+      </Link>
+
+      {latestAnn && (
+        <Link to="/student/notices" className="block">
+          <Card className="p-4 flex items-center gap-3 active:bg-muted transition-colors">
+            <div className="p-2 rounded-lg bg-amber-100"><Megaphone className="h-4 w-4 text-amber-700" /></div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm">Latest Announcement</p>
+              <p className="text-xs text-muted-foreground truncate">{latestAnn}</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Card>
+        </Link>
+      )}
     </>
   );
 }
