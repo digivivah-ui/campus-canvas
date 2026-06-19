@@ -935,6 +935,7 @@ export type Database = {
           id: string
           payment_date: string
           salary_amount: number
+          staff_id: string | null
           staff_name: string
           status: string
         }
@@ -944,6 +945,7 @@ export type Database = {
           id?: string
           payment_date?: string
           salary_amount?: number
+          staff_id?: string | null
           staff_name: string
           status?: string
         }
@@ -953,10 +955,60 @@ export type Database = {
           id?: string
           payment_date?: string
           salary_amount?: number
+          staff_id?: string | null
           staff_name?: string
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "salaries_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_structures: {
+        Row: {
+          allowances: number
+          basic: number
+          created_at: string
+          deductions: number
+          effective_from: string
+          hra: number
+          id: string
+          staff_id: string
+        }
+        Insert: {
+          allowances?: number
+          basic?: number
+          created_at?: string
+          deductions?: number
+          effective_from?: string
+          hra?: number
+          id?: string
+          staff_id: string
+        }
+        Update: {
+          allowances?: number
+          basic?: number
+          created_at?: string
+          deductions?: number
+          effective_from?: string
+          hra?: number
+          id?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_structures_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sections: {
         Row: {
@@ -1087,6 +1139,101 @@ export type Database = {
           url?: string | null
         }
         Relationships: []
+      }
+      staff: {
+        Row: {
+          address: string | null
+          auth_user_id: string | null
+          created_at: string
+          email: string | null
+          experience_years: number | null
+          full_name: string
+          id: string
+          joining_date: string | null
+          phone: string | null
+          photo_url: string | null
+          qualification: string | null
+          role: Database["public"]["Enums"]["staff_role"]
+          staff_code: string | null
+          staff_type: Database["public"]["Enums"]["staff_type"]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          auth_user_id?: string | null
+          created_at?: string
+          email?: string | null
+          experience_years?: number | null
+          full_name: string
+          id?: string
+          joining_date?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          qualification?: string | null
+          role?: Database["public"]["Enums"]["staff_role"]
+          staff_code?: string | null
+          staff_type?: Database["public"]["Enums"]["staff_type"]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          auth_user_id?: string | null
+          created_at?: string
+          email?: string | null
+          experience_years?: number | null
+          full_name?: string
+          id?: string
+          joining_date?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          qualification?: string | null
+          role?: Database["public"]["Enums"]["staff_role"]
+          staff_code?: string | null
+          staff_type?: Database["public"]["Enums"]["staff_type"]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      staff_attendance: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          marked_by: string | null
+          remarks: string | null
+          staff_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          marked_by?: string | null
+          remarks?: string | null
+          staff_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          marked_by?: string | null
+          remarks?: string | null
+          staff_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_attendance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stats: {
         Row: {
@@ -1263,6 +1410,65 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_assignments: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          is_class_teacher: boolean
+          section_id: string | null
+          staff_id: string
+          subject_id: string | null
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          is_class_teacher?: boolean
+          section_id?: string | null
+          staff_id: string
+          subject_id?: string | null
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          is_class_teacher?: boolean
+          section_id?: string | null
+          staff_id?: string
+          subject_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_assignments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_assignments_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_assignments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_assignments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1322,6 +1528,10 @@ export type Database = {
     }
     Functions: {
       current_student_ids: { Args: never; Returns: string[] }
+      current_teacher_class_ids: { Args: never; Returns: string[] }
+      current_teacher_id: { Args: never; Returns: string }
+      current_teacher_section_ids: { Args: never; Returns: string[] }
+      current_teacher_subject_ids: { Args: never; Returns: string[] }
       current_user_class_ids: { Args: never; Returns: string[] }
       current_user_section_ids: { Args: never; Returns: string[] }
       generate_admission_number: { Args: never; Returns: string }
@@ -1333,9 +1543,20 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_teacher: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "member" | "parent" | "student"
+      app_role: "admin" | "member" | "parent" | "student" | "teacher"
+      staff_role:
+        | "teacher"
+        | "principal"
+        | "coordinator"
+        | "accountant"
+        | "clerk"
+        | "receptionist"
+        | "librarian"
+        | "other"
+      staff_type: "teaching" | "non_teaching"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1463,7 +1684,18 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "member", "parent", "student"],
+      app_role: ["admin", "member", "parent", "student", "teacher"],
+      staff_role: [
+        "teacher",
+        "principal",
+        "coordinator",
+        "accountant",
+        "clerk",
+        "receptionist",
+        "librarian",
+        "other",
+      ],
+      staff_type: ["teaching", "non_teaching"],
     },
   },
 } as const

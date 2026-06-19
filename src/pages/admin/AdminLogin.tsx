@@ -65,10 +65,12 @@ export default function AdminLogin() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            Parent? <a href="/parent/login" className="text-primary font-medium hover:underline">Parent Portal</a>
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            <a href="/teacher/login" className="text-primary font-medium hover:underline">Teacher</a>
             {' · '}
-            Student? <a href="/student/login" className="text-primary font-medium hover:underline">Student Portal</a>
+            <a href="/parent/login" className="text-primary font-medium hover:underline">Parent</a>
+            {' · '}
+            <a href="/student/login" className="text-primary font-medium hover:underline">Student</a>
           </p>
         </div>
       </div>

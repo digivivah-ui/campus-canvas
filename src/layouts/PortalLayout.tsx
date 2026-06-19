@@ -17,7 +17,7 @@ interface Props {
   children: ReactNode;
   loginPath: string;
   navItems: PortalNavItem[];
-  accent?: 'parent' | 'student';
+  accent?: 'parent' | 'student' | 'teacher';
 }
 
 export function PortalLayout({ title, subtitle, children, loginPath, navItems, accent = 'parent' }: Props) {
@@ -25,8 +25,9 @@ export function PortalLayout({ title, subtitle, children, loginPath, navItems, a
   const navigate = useNavigate();
   const handleSignOut = async () => { await signOut(); navigate(loginPath); };
 
-  const headerBg = accent === 'student'
-    ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white'
+  const headerBg =
+    accent === 'student' ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white'
+    : accent === 'teacher' ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white'
     : 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground';
 
   return (
@@ -66,7 +67,11 @@ export function PortalLayout({ title, subtitle, children, loginPath, navItems, a
                 <>
                   <div className={cn(
                     'p-1.5 rounded-lg transition-colors',
-                    isActive && (accent === 'student' ? 'bg-indigo-100 text-indigo-700' : 'bg-primary/10 text-primary')
+                    isActive && (
+                      accent === 'student' ? 'bg-indigo-100 text-indigo-700'
+                      : accent === 'teacher' ? 'bg-teal-100 text-teal-700'
+                      : 'bg-primary/10 text-primary'
+                    )
                   )}>
                     <Icon className="h-4 w-4" />
                   </div>

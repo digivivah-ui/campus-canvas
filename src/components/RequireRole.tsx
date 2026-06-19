@@ -19,8 +19,7 @@ export function RequireRole({ role, loginPath, children }: Props) {
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to={loginPath} replace />;
   if (currentRole !== role) {
-    // Authenticated as a different role — send them to their own home.
-    if (currentRole === 'admin' || currentRole === 'parent' || currentRole === 'student') {
+    if (currentRole === 'admin' || currentRole === 'teacher' || currentRole === 'parent' || currentRole === 'student') {
       return <Navigate to={roleHome(currentRole)} replace />;
     }
     return <Navigate to={loginPath} replace />;
