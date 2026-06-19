@@ -43,6 +43,9 @@ import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminNotices from "./pages/admin/AdminNotices";
 import AdminHomework from "./pages/admin/AdminHomework";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
+import AdminStaff from "./pages/admin/AdminStaff";
+import AdminTeacherAssignments from "./pages/admin/AdminTeacherAssignments";
+import AdminStaffAttendance from "./pages/admin/AdminStaffAttendance";
 import ParentLogin from "./pages/parent/ParentLogin";
 import ParentShell from "./layouts/ParentShell";
 import ParentDashboard from "./pages/parent/ParentDashboard";
@@ -58,6 +61,15 @@ import StudentAttendance from "./pages/student/StudentAttendance";
 import StudentFees from "./pages/student/StudentFees";
 import StudentResults from "./pages/student/StudentResults";
 import StudentNotices from "./pages/student/StudentNotices";
+import TeacherLogin from "./pages/teacher/TeacherLogin";
+import TeacherShell from "./layouts/TeacherShell";
+import TeacherDashboard from "./pages/teacher/TeacherDashboard";
+import TeacherClasses from "./pages/teacher/TeacherClasses";
+import TeacherAttendance from "./pages/teacher/TeacherAttendance";
+import TeacherMarks from "./pages/teacher/TeacherMarks";
+import TeacherHomework from "./pages/teacher/TeacherHomework";
+import TeacherNotices from "./pages/teacher/TeacherNotices";
+import TeacherProfile from "./pages/teacher/TeacherProfile";
 import { RequireRole } from "@/components/RequireRole";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 
@@ -109,6 +121,9 @@ const App = () => (
               <Route path="/admin/notices" element={<AdminNotices />} />
               <Route path="/admin/homework" element={<AdminHomework />} />
               <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+              <Route path="/admin/staff" element={<AdminStaff />} />
+              <Route path="/admin/teacher-assignments" element={<AdminTeacherAssignments />} />
+              <Route path="/admin/staff-attendance" element={<AdminStaffAttendance />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
 
               {/* Parent Portal */}
@@ -132,7 +147,17 @@ const App = () => (
                 <Route path="notices" element={<StudentNotices />} />
               </Route>
 
-
+              {/* Teacher Portal */}
+              <Route path="/teacher/login" element={<TeacherLogin />} />
+              <Route path="/teacher" element={<TeacherShell />}>
+                <Route path="dashboard" element={<TeacherDashboard />} />
+                <Route path="classes" element={<TeacherClasses />} />
+                <Route path="attendance" element={<TeacherAttendance />} />
+                <Route path="marks" element={<TeacherMarks />} />
+                <Route path="homework" element={<TeacherHomework />} />
+                <Route path="notices" element={<TeacherNotices />} />
+                <Route path="profile" element={<TeacherProfile />} />
+              </Route>
 
               <Route path="*" element={<NotFound />} />
             </Routes>
