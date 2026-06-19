@@ -4,7 +4,7 @@ import {
   Home, FileText, Building2, Users, Calendar, Image, MessageSquare, LogOut,
   GraduationCap, Menu, Settings, BarChart3, Globe, Video, BookOpen,
   IndianRupee, PieChart, UserCheck, AlertTriangle, ChevronDown, ChevronRight, School,
-  CalendarCheck, ClipboardList, Award, Bell, Megaphone,
+  CalendarCheck, ClipboardList, Award, Bell, Megaphone, Briefcase, UserPlus,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
@@ -54,6 +54,16 @@ const navGroups: NavGroup[] = [
       { href: '/admin/finance', label: 'Finance', icon: IndianRupee },
       { href: '/admin/analytics', label: 'Analytics', icon: PieChart },
       { href: '/admin/defaulters', label: 'Defaulters', icon: AlertTriangle },
+    ],
+  },
+  {
+    id: 'staff',
+    label: 'Staff',
+    icon: Briefcase,
+    items: [
+      { href: '/admin/staff', label: 'Staff Directory', icon: Users },
+      { href: '/admin/teacher-assignments', label: 'Teacher Assignments', icon: UserPlus },
+      { href: '/admin/staff-attendance', label: 'Staff Attendance', icon: CalendarCheck },
     ],
   },
   {
