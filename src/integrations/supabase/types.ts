@@ -113,6 +113,53 @@ export type Database = {
         }
         Relationships: []
       }
+      certificates: {
+        Row: {
+          certificate_number: string
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          created_at: string
+          data: Json
+          id: string
+          issued_by: string | null
+          issued_on: string
+          remarks: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          certificate_number: string
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          created_at?: string
+          data?: Json
+          id?: string
+          issued_by?: string | null
+          issued_on?: string
+          remarks?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          certificate_number?: string
+          certificate_type?: Database["public"]["Enums"]["certificate_type"]
+          created_at?: string
+          data?: Json
+          id?: string
+          issued_by?: string | null
+          issued_on?: string
+          remarks?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           course_id: string
@@ -1268,6 +1315,54 @@ export type Database = {
         }
         Relationships: []
       }
+      student_transport: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          pickup_point: string | null
+          route_id: string
+          student_id: string
+          transport_fee: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pickup_point?: string | null
+          route_id: string
+          student_id: string
+          transport_fee?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pickup_point?: string | null
+          route_id?: string
+          student_id?: string
+          transport_fee?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_transport_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "transport_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_transport_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           address: string | null
@@ -1469,6 +1564,121 @@ export type Database = {
           },
         ]
       }
+      transport_drivers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          license_number: string | null
+          name: string
+          phone: string | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          license_number?: string | null
+          name: string
+          phone?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          license_number?: string | null
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_drivers_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "transport_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transport_routes: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          monthly_fee: number
+          pickup_points: Json
+          route_name: string
+          route_number: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          monthly_fee?: number
+          pickup_points?: Json
+          route_name: string
+          route_number: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          monthly_fee?: number
+          pickup_points?: Json
+          route_name?: string
+          route_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transport_vehicles: {
+        Row: {
+          capacity: number
+          created_at: string
+          id: string
+          is_active: boolean
+          route_id: string | null
+          updated_at: string
+          vehicle_number: string
+          vehicle_type: string
+        }
+        Insert: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          route_id?: string | null
+          updated_at?: string
+          vehicle_number: string
+          vehicle_type?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          route_id?: string | null
+          updated_at?: string
+          vehicle_number?: string
+          vehicle_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_vehicles_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "transport_routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1535,6 +1745,10 @@ export type Database = {
       current_user_class_ids: { Args: never; Returns: string[] }
       current_user_section_ids: { Args: never; Returns: string[] }
       generate_admission_number: { Args: never; Returns: string }
+      generate_certificate_number: {
+        Args: { _type: Database["public"]["Enums"]["certificate_type"] }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1547,6 +1761,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "member" | "parent" | "student" | "teacher"
+      certificate_type: "bonafide" | "leaving" | "character"
       staff_role:
         | "teacher"
         | "principal"
@@ -1685,6 +1900,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "member", "parent", "student", "teacher"],
+      certificate_type: ["bonafide", "leaving", "character"],
       staff_role: [
         "teacher",
         "principal",

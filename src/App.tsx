@@ -46,6 +46,10 @@ import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminStaff from "./pages/admin/AdminStaff";
 import AdminTeacherAssignments from "./pages/admin/AdminTeacherAssignments";
 import AdminStaffAttendance from "./pages/admin/AdminStaffAttendance";
+import AdminTransport from "./pages/admin/AdminTransport";
+import AdminIdCards from "./pages/admin/AdminIdCards";
+import AdminCertificates from "./pages/admin/AdminCertificates";
+import ParentTransport from "./pages/parent/ParentTransport";
 import ParentLogin from "./pages/parent/ParentLogin";
 import ParentShell from "./layouts/ParentShell";
 import ParentDashboard from "./pages/parent/ParentDashboard";
@@ -125,6 +129,9 @@ const App = () => (
               <Route path="/admin/teacher-assignments" element={<AdminTeacherAssignments />} />
               <Route path="/admin/staff-attendance" element={<AdminStaffAttendance />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
+              <Route path="/admin/transport" element={<AdminTransport />} />
+              <Route path="/admin/id-cards" element={<AdminIdCards />} />
+              <Route path="/admin/certificates" element={<AdminCertificates />} />
 
               {/* Parent Portal */}
               <Route path="/parent/login" element={<ParentLogin />} />
@@ -135,6 +142,7 @@ const App = () => (
                 <Route path="attendance" element={<ParentAttendance />} />
                 <Route path="results" element={<ParentResults />} />
                 <Route path="notices" element={<ParentNotices />} />
+                <Route path="transport" element={<ParentTransport />} />
               </Route>
 
               {/* Student Portal */}
