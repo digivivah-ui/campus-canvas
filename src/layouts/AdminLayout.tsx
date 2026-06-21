@@ -5,6 +5,7 @@ import {
   GraduationCap, Menu, Settings, BarChart3, Globe, Video, BookOpen,
   IndianRupee, PieChart, UserCheck, AlertTriangle, ChevronDown, ChevronRight, School,
   CalendarCheck, ClipboardList, Award, Bell, Megaphone, Briefcase, UserPlus,
+  Bus, IdCard, FileCheck,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
@@ -54,6 +55,9 @@ const navGroups: NavGroup[] = [
       { href: '/admin/finance', label: 'Finance', icon: IndianRupee },
       { href: '/admin/analytics', label: 'Analytics', icon: PieChart },
       { href: '/admin/defaulters', label: 'Defaulters', icon: AlertTriangle },
+      { href: '/admin/transport', label: 'Transport', icon: Bus },
+      { href: '/admin/id-cards', label: 'ID Cards', icon: IdCard },
+      { href: '/admin/certificates', label: 'Certificates', icon: FileCheck },
     ],
   },
   {
