@@ -9,7 +9,7 @@ import { ChildSwitcher } from '@/components/portal/ChildSwitcher';
 import { PortalSkeleton } from '@/components/portal/PortalSkeleton';
 import { EmptyState } from '@/components/portal/EmptyState';
 import { Card } from '@/components/ui/card';
-import { Users, Bell, ChevronRight, Receipt, BookOpen, Megaphone } from 'lucide-react';
+import { Users, Bell, ChevronRight, Receipt, BookOpen, Megaphone, Bus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function ParentDashboard() {
@@ -20,6 +20,7 @@ export default function ParentDashboard() {
   const [latestNotice, setLatestNotice] = useState<{ title: string; created_at: string } | null>(null);
   const [upcomingHw, setUpcomingHw] = useState<{ title: string; subject: string; due_date: string } | null>(null);
   const [latestAnnouncement, setLatestAnnouncement] = useState<{ title: string } | null>(null);
+  const [transport, setTransport] = useState<{ route_name: string; pickup_point: string | null } | null>(null);
 
   useEffect(() => {
     if (!selectedId || !selected) return;
@@ -41,6 +42,12 @@ export default function ParentDashboard() {
       setLatestNotice(notices[0] ? { title: notices[0].title, created_at: notices[0].publish_date } : null);
       setUpcomingHw(hw?.[0] ?? null);
       setLatestAnnouncement(ann?.[0] ?? null);
+      const { data: t } = await supabase
+        .from('student_transport')
+        .select('pickup_point, transport_routes(route_name)')
+        .eq('student_id', selectedId)
+        .maybeSingle();
+      setTransport(t ? { route_name: (t as any).transport_routes?.route_name ?? '—', pickup_point: (t as any).pickup_point } : null);
     })();
   }, [selectedId, selected]);
 
@@ -101,6 +108,19 @@ export default function ParentDashboard() {
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Card>
       </Link>
+
+      {transport && (
+        <Link to="/parent/transport" className="block">
+          <Card className="p-4 flex items-center gap-3 active:bg-muted transition-colors">
+            <div className="p-2 rounded-lg bg-sky-100"><Bus className="h-4 w-4 text-sky-700" /></div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm">School Transport</p>
+              <p className="text-xs text-muted-foreground truncate">{transport.route_name} · {transport.pickup_point ?? '—'}</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Card>
+        </Link>
+      )}
 
       {latestAnnouncement && (
         <Link to="/parent/notices" className="block">
