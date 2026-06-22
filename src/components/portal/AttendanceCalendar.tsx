@@ -11,12 +11,19 @@ const META: Record<string, { short: string; cls: string }> = {
   half_day: { short: 'H', cls: 'bg-sky-100 text-sky-700' },
 };
 
-export function AttendanceCalendar({ records }: { records: Rec[] }) {
-  const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
-  const year = cursor.getFullYear();
-  const month = cursor.getMonth();
+interface CalProps { records: Rec[]; month?: number; year?: number; onMonthChange?: (m: number) => void; onYearChange?: (y: number) => void }
+export function AttendanceCalendar({ records, month: ctlM, year: ctlY, onMonthChange, onYearChange }: CalProps) {
+  const [internal, setInternal] = useState(() => { const d = new Date(); d.setDate(1); return d; });
+  const controlled = ctlM != null && ctlY != null;
+  const year = controlled ? (ctlY as number) : internal.getFullYear();
+  const month = controlled ? (ctlM as number) : internal.getMonth();
+  const setCursor = (d: Date) => {
+    if (controlled) { onMonthChange?.(d.getMonth()); onYearChange?.(d.getFullYear()); }
+    else setInternal(d);
+  };
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startWeekday = new Date(year, month, 1).getDay();
+
 
   const byDate = useMemo(() => {
     const m: Record<string, string> = {};
@@ -31,7 +38,7 @@ export function AttendanceCalendar({ records }: { records: Rec[] }) {
   return (
     <Card>
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-base">{cursor.toLocaleString('default', { month: 'long' })} {year}</CardTitle>
+        <CardTitle className="text-base">{new Date(year, month, 1).toLocaleString('default', { month: 'long' })} {year}</CardTitle>
         <div className="flex items-center gap-1">
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setCursor(new Date(year, month - 1, 1))}><ChevronLeft className="h-4 w-4" /></Button>
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setCursor(new Date(year, month + 1, 1))}><ChevronRight className="h-4 w-4" /></Button>

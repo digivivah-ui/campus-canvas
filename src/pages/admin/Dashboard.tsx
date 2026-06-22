@@ -12,6 +12,8 @@ import {
   getAllMembers,
 } from '@/services/api';
  import { Skeleton } from '@/components/common/Skeleton';
+ import { DashboardWidgets } from '@/components/admin/DashboardWidgets';
+
  
  interface StatCardProps {
    title: string;
@@ -116,6 +118,10 @@ import {
               ))}
             </div>
           )}
+
+          <DashboardWidgets />
+
+
  
          {/* Unread Messages Alert */}
          {stats.unreadMessages > 0 && (

@@ -47,6 +47,51 @@ export type Database = {
         }
         Relationships: []
       }
+      admission_inquiries: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          interested_class: string | null
+          next_follow_up_date: string | null
+          notes: string | null
+          parent_name: string | null
+          phone: string | null
+          source: string | null
+          status: Database["public"]["Enums"]["inquiry_status"]
+          student_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          interested_class?: string | null
+          next_follow_up_date?: string | null
+          notes?: string | null
+          parent_name?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: Database["public"]["Enums"]["inquiry_status"]
+          student_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          interested_class?: string | null
+          next_follow_up_date?: string | null
+          notes?: string | null
+          parent_name?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: Database["public"]["Enums"]["inquiry_status"]
+          student_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           banner_image_url: string | null
@@ -112,6 +157,53 @@ export type Database = {
           student_id?: string
         }
         Relationships: []
+      }
+      calendar_events: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          description: string | null
+          end_date: string
+          event_type: Database["public"]["Enums"]["calendar_event_type"]
+          id: string
+          is_public: boolean
+          start_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_date: string
+          event_type?: Database["public"]["Enums"]["calendar_event_type"]
+          id?: string
+          is_public?: boolean
+          start_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          event_type?: Database["public"]["Enums"]["calendar_event_type"]
+          id?: string
+          is_public?: boolean
+          start_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       certificates: {
         Row: {
@@ -975,6 +1067,45 @@ export type Database = {
         }
         Relationships: []
       }
+      reminders: {
+        Row: {
+          category: Database["public"]["Enums"]["reminder_category"]
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string
+          id: string
+          priority: Database["public"]["Enums"]["reminder_priority"]
+          status: Database["public"]["Enums"]["reminder_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["reminder_category"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date: string
+          id?: string
+          priority?: Database["public"]["Enums"]["reminder_priority"]
+          status?: Database["public"]["Enums"]["reminder_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["reminder_category"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["reminder_priority"]
+          status?: Database["public"]["Enums"]["reminder_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       salaries: {
         Row: {
           created_at: string
@@ -1282,6 +1413,56 @@ export type Database = {
           },
         ]
       }
+      staff_leaves: {
+        Row: {
+          created_at: string
+          from_date: string
+          id: string
+          leave_type: Database["public"]["Enums"]["staff_leave_type"]
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          staff_id: string
+          status: Database["public"]["Enums"]["leave_status"]
+          to_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          from_date: string
+          id?: string
+          leave_type?: Database["public"]["Enums"]["staff_leave_type"]
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_id: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          to_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          from_date?: string
+          id?: string
+          leave_type?: Database["public"]["Enums"]["staff_leave_type"]
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_id?: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          to_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_leaves_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stats: {
         Row: {
           created_at: string | null
@@ -1314,6 +1495,53 @@ export type Database = {
           value?: string
         }
         Relationships: []
+      }
+      student_leaves: {
+        Row: {
+          created_at: string
+          from_date: string
+          id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["leave_status"]
+          student_id: string
+          to_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          from_date: string
+          id?: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["leave_status"]
+          student_id: string
+          to_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          from_date?: string
+          id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["leave_status"]
+          student_id?: string
+          to_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_leaves_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_transport: {
         Row: {
@@ -1700,6 +1928,53 @@ export type Database = {
         }
         Relationships: []
       }
+      visitors: {
+        Row: {
+          created_at: string
+          entry_time: string
+          exit_time: string | null
+          id: string
+          phone: string | null
+          purpose: string | null
+          remarks: string | null
+          student_id: string | null
+          updated_at: string
+          visitor_name: string
+        }
+        Insert: {
+          created_at?: string
+          entry_time?: string
+          exit_time?: string | null
+          id?: string
+          phone?: string | null
+          purpose?: string | null
+          remarks?: string | null
+          student_id?: string | null
+          updated_at?: string
+          visitor_name: string
+        }
+        Update: {
+          created_at?: string
+          entry_time?: string
+          exit_time?: string | null
+          id?: string
+          phone?: string | null
+          purpose?: string | null
+          remarks?: string | null
+          student_id?: string | null
+          updated_at?: string
+          visitor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitors_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       years: {
         Row: {
           course_id: string
@@ -1761,7 +2036,26 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "member" | "parent" | "student" | "teacher"
+      calendar_event_type: "holiday" | "exam" | "event" | "meeting" | "vacation"
       certificate_type: "bonafide" | "leaving" | "character"
+      inquiry_status:
+        | "new"
+        | "contacted"
+        | "follow_up"
+        | "interested"
+        | "admitted"
+        | "closed"
+      leave_status: "pending" | "approved" | "rejected"
+      reminder_category:
+        | "fee"
+        | "admission"
+        | "staff_doc"
+        | "transport"
+        | "exam"
+        | "general"
+      reminder_priority: "low" | "medium" | "high"
+      reminder_status: "pending" | "completed"
+      staff_leave_type: "casual" | "sick" | "earned" | "unpaid" | "other"
       staff_role:
         | "teacher"
         | "principal"
@@ -1900,7 +2194,28 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "member", "parent", "student", "teacher"],
+      calendar_event_type: ["holiday", "exam", "event", "meeting", "vacation"],
       certificate_type: ["bonafide", "leaving", "character"],
+      inquiry_status: [
+        "new",
+        "contacted",
+        "follow_up",
+        "interested",
+        "admitted",
+        "closed",
+      ],
+      leave_status: ["pending", "approved", "rejected"],
+      reminder_category: [
+        "fee",
+        "admission",
+        "staff_doc",
+        "transport",
+        "exam",
+        "general",
+      ],
+      reminder_priority: ["low", "medium", "high"],
+      reminder_status: ["pending", "completed"],
+      staff_leave_type: ["casual", "sick", "earned", "unpaid", "other"],
       staff_role: [
         "teacher",
         "principal",
