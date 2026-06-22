@@ -1,85 +1,60 @@
-## Phase 6 — Transport + ID Cards + Certificates
+# Phase 6.5 — School Operations Automation + Attendance Enhancements
 
-Three new admin modules grouped under the existing **School ERP** sidebar, plus a Transport card in the Parent Portal. No changes to admin/auth/finance core behavior.
+## Scope
+Five new operational modules + a full upgrade of the Attendance experience across admin, parent, and student portals. Built on top of existing classes/sections/students/staff with RLS. No existing module is broken.
 
----
+## 1. Database (single migration)
 
-### 1. Database (single migration)
+New tables, all with admin full-CRUD; portal-scoped reads where relevant:
 
-New tables in `public` (each with GRANT, RLS, admin-full + scoped reads):
+- `student_leaves` — student_id, from_date, to_date, reason, status (pending/approved/rejected), reviewed_by, reviewed_at
+- `staff_leaves` — staff_id, leave_type (casual/sick/earned/unpaid), from_date, to_date, reason, status, reviewed_by, reviewed_at
+- `calendar_events` — title, description, event_type (holiday/exam/event/meeting/vacation), start_date, end_date, class_id (nullable = school-wide), is_public
+- `admission_inquiries` — student_name, parent_name, phone, email, interested_class, source, notes, status (new/contacted/follow_up/interested/admitted/closed), next_follow_up_date
+- `visitors` — visitor_name, phone, purpose, student_id (nullable), entry_time, exit_time, remarks
+- `reminders` — title, description, category (fee/admission/staff_doc/transport/exam/general), due_date, priority (low/med/high), status (pending/completed), created_by
 
-- **transport_routes** — `route_name, route_number (unique), pickup_points (jsonb array of {name, time}), monthly_fee, is_active`
-- **transport_vehicles** — `vehicle_number (unique), vehicle_type, capacity, route_id, is_active`
-- **transport_drivers** — `name, phone, license_number, vehicle_id, is_active`
-- **student_transport** — `student_id (unique), route_id, pickup_point, transport_fee, is_active`
-- **certificates** — `certificate_type (enum: bonafide, leaving, character), student_id, certificate_number (auto), data (jsonb snapshot), issued_on, issued_by, remarks`
+RLS: admin full access, parents/students read public `calendar_events` and own `student_leaves`. Seed: a few holidays, sample inquiries, reminders, visitor logs.
 
-Enums: `certificate_type`.
+## 2. Admin Pages (under "School ERP" group in sidebar)
 
-RLS:
-- Admin full CRUD on all five.
-- Parents/students: SELECT own `student_transport` (via `current_student_ids()`) and own `certificates`.
-- Read-only SELECT for `authenticated` on routes/vehicles/drivers (needed to render dropdowns and parent transport card).
+- `/admin/leaves` — tabs: Student | Staff. Approve / Reject actions, filter by status, history table.
+- `/admin/calendar` — monthly grid + event list. Create/edit/delete events with type color-coding.
+- `/admin/inquiries` — searchable, paginated table with status pipeline view; quick status change; follow-up dates.
+- `/admin/visitors` — daily log with check-out action, search, date range filter, pagination.
+- `/admin/reminders` — list grouped by Overdue / Today / Upcoming / Completed.
 
-Seed: 3 routes, 3 vehicles, 3 drivers, transport assignments for ~5 demo students, 2 sample certificates.
+## 3. Attendance Enhancements
 
----
+Refactor `AdminAttendance.tsx` to add a sticky filter bar (Month / Year / Class / Section) and 5 summary cards (Present, Absent, Leave, Half Day, %), plus an analytics block (Working Days, Days Present/Absent/Leave, %) that recomputes from the filtered range. Previous/Next month chevrons keep the React Query cache; no reload.
 
-### 2. Admin pages (new, under School ERP group)
+`AttendanceCalendar` already supports month navigation — extend to accept controlled `cursor` so the filter bar drives it.
 
-- `/admin/transport` — tabbed page (Routes / Vehicles / Drivers / Student Assignments). Search + filter + pagination on each tab. Mobile cards on small screens, table on desktop.
-- `/admin/id-cards` — student/staff toggle, search & class filter, multi-select, "Generate PDF" (single or bulk) using `jspdf` + `html2canvas`. Pulls school name/logo/address from `site_settings`.
-- `/admin/certificates` — left: pick certificate type + student + extra fields (reason, conduct, leaving date); right: live preview. Buttons: Save & Generate PDF, Print. History table below with re-download.
+Parent (`ParentAttendance.tsx`) and Student (`StudentAttendance.tsx`) gain the same Month / Year selector and summary cards (reusing `AttendanceSummary`).
 
-Sidebar additions in `AdminLayout` School ERP group: Transport, ID Cards, Certificates (lucide icons: `Bus`, `IdCard`, `FileCheck`).
+## 4. Dashboard Widgets
 
----
+Add to `AdminDashboard`:
+- Upcoming Events (next 5 from `calendar_events`)
+- Pending Leave Requests (count + link)
+- Pending Admission Follow-ups (due today/overdue from `admission_inquiries.next_follow_up_date`)
+- Upcoming Reminders (next 5 pending)
 
-### 3. Parent portal integration
+Add to Parent/Student dashboards: Upcoming Events strip pulled from public `calendar_events`.
 
-- Add Transport card to `ParentDashboard` (route name, pickup point, monthly fee) when assignment exists.
-- Add `/parent/transport` route (simple summary, fee, contact driver) — optional minimal page accessible from dashboard card.
-- Add Certificates list in parent dashboard (download issued PDFs).
+## 5. Routing & Sidebar
 
-No changes to Student portal navigation (out of scope per spec).
+`App.tsx` — add 5 admin routes. `AdminLayout` — add "Leave Management", "Calendar", "Admissions", "Visitors", "Reminders" inside the existing School ERP group, each with a Lucide icon.
 
----
+## 6. Components / Utilities
 
-### 4. Shared components
+- `src/components/admin/calendar/MonthGrid.tsx` — reusable monthly calendar with event chips
+- `src/components/portal/AttendanceFilterBar.tsx` — Month / Year (/ Class / Section) selectors
+- `src/components/portal/AttendanceAnalytics.tsx` — Working Days / Present / Absent / Leave / %
+- `src/components/dashboard/UpcomingEventsWidget.tsx`, `PendingRemindersWidget.tsx`, `PendingLeavesWidget.tsx`, `FollowUpsWidget.tsx`
 
-- `src/components/admin/transport/RoutesTab.tsx`, `VehiclesTab.tsx`, `DriversTab.tsx`, `AssignmentsTab.tsx`
-- `src/components/admin/idcards/StudentIdCard.tsx`, `StaffIdCard.tsx` (printable A7-ish card UI using school branding)
-- `src/components/admin/certificates/CertificateTemplate.tsx` (renders Bonafide/Leaving/Character with school header, body, signature line)
-- `src/lib/pdf.ts` — wrapper around `jspdf` + `html2canvas` for "render DOM node → PDF" (used by both ID cards bulk-print and certificates).
+## Out of scope
+Email/SMS dispatch, ICS export, recurring events, leave balance accounting, visitor QR/photo, push notifications.
 
-Dependencies to add: `jspdf`, `html2canvas`, `qrcode.react`.
-
----
-
-### 5. Routing & types
-
-- `App.tsx`: 4 new admin routes + 1 parent route.
-- `AdminLayout.tsx`: 3 new sidebar items.
-- After migration runs, `integrations/supabase/types.ts` auto-regenerates.
-
----
-
-### 6. Out of scope (explicit)
-
-- Live GPS / vehicle tracking
-- Real QR signing (placeholder QR only)
-- Digital signature uploads (placeholder line)
-- WhatsApp/SMS dispatch of certificates
-- Editable certificate templates UI (templates are code-defined; only data is dynamic)
-
----
-
-### Order of execution
-
-1. Migration (schema + RLS + seed) — awaits approval.
-2. Install `jspdf`, `html2canvas`, `qrcode.react`.
-3. Build shared components + `pdf.ts`.
-4. Admin pages (Transport → ID Cards → Certificates).
-5. Sidebar + route wiring.
-6. Parent dashboard transport/certificate cards.
-7. Smoke check.
+## Execution order
+Migration → types regen → shared components → admin pages → sidebar/routes → attendance refactor → portal updates → dashboard widgets → smoke check.
