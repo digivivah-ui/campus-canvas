@@ -11,12 +11,19 @@ const META: Record<string, { short: string; cls: string }> = {
   half_day: { short: 'H', cls: 'bg-sky-100 text-sky-700' },
 };
 
-export function AttendanceCalendar({ records }: { records: Rec[] }) {
-  const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
-  const year = cursor.getFullYear();
-  const month = cursor.getMonth();
+interface CalProps { records: Rec[]; month?: number; year?: number; onMonthChange?: (m: number) => void; onYearChange?: (y: number) => void }
+export function AttendanceCalendar({ records, month: ctlM, year: ctlY, onMonthChange, onYearChange }: CalProps) {
+  const [internal, setInternal] = useState(() => { const d = new Date(); d.setDate(1); return d; });
+  const controlled = ctlM != null && ctlY != null;
+  const year = controlled ? (ctlY as number) : internal.getFullYear();
+  const month = controlled ? (ctlM as number) : internal.getMonth();
+  const setCursor = (d: Date) => {
+    if (controlled) { onMonthChange?.(d.getMonth()); onYearChange?.(d.getFullYear()); }
+    else setInternal(d);
+  };
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startWeekday = new Date(year, month, 1).getDay();
+
 
   const byDate = useMemo(() => {
     const m: Record<string, string> = {};
