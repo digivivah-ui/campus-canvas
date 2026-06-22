@@ -49,6 +49,12 @@ import AdminStaffAttendance from "./pages/admin/AdminStaffAttendance";
 import AdminTransport from "./pages/admin/AdminTransport";
 import AdminIdCards from "./pages/admin/AdminIdCards";
 import AdminCertificates from "./pages/admin/AdminCertificates";
+import AdminLeaves from "./pages/admin/AdminLeaves";
+import AdminCalendar from "./pages/admin/AdminCalendar";
+import AdminInquiries from "./pages/admin/AdminInquiries";
+import AdminVisitors from "./pages/admin/AdminVisitors";
+import AdminReminders from "./pages/admin/AdminReminders";
+
 import ParentTransport from "./pages/parent/ParentTransport";
 import ParentLogin from "./pages/parent/ParentLogin";
 import ParentShell from "./layouts/ParentShell";
@@ -132,6 +138,12 @@ const App = () => (
               <Route path="/admin/transport" element={<AdminTransport />} />
               <Route path="/admin/id-cards" element={<AdminIdCards />} />
               <Route path="/admin/certificates" element={<AdminCertificates />} />
+              <Route path="/admin/leaves" element={<AdminLeaves />} />
+              <Route path="/admin/calendar" element={<AdminCalendar />} />
+              <Route path="/admin/inquiries" element={<AdminInquiries />} />
+              <Route path="/admin/visitors" element={<AdminVisitors />} />
+              <Route path="/admin/reminders" element={<AdminReminders />} />
+
 
               {/* Parent Portal */}
               <Route path="/parent/login" element={<ParentLogin />} />

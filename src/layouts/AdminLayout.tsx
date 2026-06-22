@@ -5,7 +5,8 @@ import {
   GraduationCap, Menu, Settings, BarChart3, Globe, Video, BookOpen,
   IndianRupee, PieChart, UserCheck, AlertTriangle, ChevronDown, ChevronRight, School,
   CalendarCheck, ClipboardList, Award, Bell, Megaphone, Briefcase, UserPlus,
-  Bus, IdCard, FileCheck,
+  Bus, IdCard, FileCheck, CalendarRange, UserCircle, BellRing,
+
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
@@ -58,7 +59,13 @@ const navGroups: NavGroup[] = [
       { href: '/admin/transport', label: 'Transport', icon: Bus },
       { href: '/admin/id-cards', label: 'ID Cards', icon: IdCard },
       { href: '/admin/certificates', label: 'Certificates', icon: FileCheck },
+      { href: '/admin/leaves', label: 'Leave Management', icon: CalendarRange },
+      { href: '/admin/calendar', label: 'Academic Calendar', icon: Calendar },
+      { href: '/admin/inquiries', label: 'Admission Inquiries', icon: UserPlus },
+      { href: '/admin/visitors', label: 'Visitors', icon: UserCircle },
+      { href: '/admin/reminders', label: 'Reminders', icon: BellRing },
     ],
+
   },
   {
     id: 'staff',
