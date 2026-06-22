@@ -38,7 +38,7 @@ export function AttendanceCalendar({ records, month: ctlM, year: ctlY, onMonthCh
   return (
     <Card>
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-base">{cursor.toLocaleString('default', { month: 'long' })} {year}</CardTitle>
+        <CardTitle className="text-base">{new Date(year, month, 1).toLocaleString('default', { month: 'long' })} {year}</CardTitle>
         <div className="flex items-center gap-1">
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setCursor(new Date(year, month - 1, 1))}><ChevronLeft className="h-4 w-4" /></Button>
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setCursor(new Date(year, month + 1, 1))}><ChevronRight className="h-4 w-4" /></Button>
