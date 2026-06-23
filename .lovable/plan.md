@@ -1,60 +1,75 @@
-# Phase 6.5 — School Operations Automation + Attendance Enhancements
+## Phase 6.8 — ERP Hardening & Polish
 
-## Scope
-Five new operational modules + a full upgrade of the Attendance experience across admin, parent, and student portals. Built on top of existing classes/sections/students/staff with RLS. No existing module is broken.
+Goal: make the existing ERP feel production-ready without adding new business modules. The strategy is **build reusable primitives once, then roll them out** to the highest-traffic admin tables. A full app-wide sweep of every single page is out of scope for one phase — I'll cover the modules the brief explicitly calls out and leave the rest on the same primitives so a follow-up pass is mechanical.
 
-## 1. Database (single migration)
+### 1. Shared primitives (new files under `src/components/shared/`)
 
-New tables, all with admin full-CRUD; portal-scoped reads where relevant:
+- `DataToolbar.tsx` — debounced search input + slot for filters + slot for export button. Sticky variant.
+- `Pagination.tsx` — page controls, page-size selector (10/25/50/100), "Showing X–Y of N".
+- `DataTable.tsx` — thin wrapper around shadcn `Table` that takes `columns`, `rows`, `loading`, `empty`, `sort`, integrates toolbar + pagination.
+- `EmptyState.tsx` — promote the existing portal EmptyState to a shared one with optional action button.
+- `TableSkeleton.tsx` — row skeletons matching column count.
+- `ErrorState.tsx` — friendly error card with retry.
+- `useDebouncedValue.ts` — 250 ms debounce hook.
+- `usePagedQuery.ts` — small helper around React Query that returns `{rows,total,page,setPage,pageSize,setPageSize,loading,error}`.
+- `lib/export.ts` — `exportCSV(filename, rows, columns)` and `exportPDF(filename, title, rows, columns)` using the existing `jspdf` already installed. One entry point used everywhere.
+- `lib/permissions.ts` — `can(role, action)` matrix covering admin / principal / accountant / teacher / parent / student. Wire `RequireRole` to accept multiple roles and add a `<Can action="...">` component. No UI removal yet — just the foundation, since the brief says "no major UI changes required yet".
+- `lib/errors.ts` — `toFriendlyError(e)` mapping Supabase/Postgrest codes to human strings, used by a shared `handleError(e)` that toasts.
 
-- `student_leaves` — student_id, from_date, to_date, reason, status (pending/approved/rejected), reviewed_by, reviewed_at
-- `staff_leaves` — staff_id, leave_type (casual/sick/earned/unpaid), from_date, to_date, reason, status, reviewed_by, reviewed_at
-- `calendar_events` — title, description, event_type (holiday/exam/event/meeting/vacation), start_date, end_date, class_id (nullable = school-wide), is_public
-- `admission_inquiries` — student_name, parent_name, phone, email, interested_class, source, notes, status (new/contacted/follow_up/interested/admitted/closed), next_follow_up_date
-- `visitors` — visitor_name, phone, purpose, student_id (nullable), entry_time, exit_time, remarks
-- `reminders` — title, description, category (fee/admission/staff_doc/transport/exam/general), due_date, priority (low/med/high), status (pending/completed), created_by
+### 2. Rollout (apply primitives to these admin pages)
 
-RLS: admin full access, parents/students read public `calendar_events` and own `student_leaves`. Seed: a few holidays, sample inquiries, reminders, visitor logs.
+Each gets: search + filter bar + pagination + export + empty state + skeleton + friendly errors.
 
-## 2. Admin Pages (under "School ERP" group in sidebar)
+- `AdminStudents.tsx`
+- `AdminStaff.tsx`
+- `AdminAttendance.tsx` (keep existing analytics; replace ad-hoc list with `DataTable`)
+- `AdminFinance.tsx` (collections tab + expenses tab)
+- `AdminResults.tsx`
+- `AdminInquiries.tsx`
+- `AdminVisitors.tsx`
+- `AdminCertificates.tsx` (history table)
+- `AdminNotifications.tsx`
 
-- `/admin/leaves` — tabs: Student | Staff. Approve / Reject actions, filter by status, history table.
-- `/admin/calendar` — monthly grid + event list. Create/edit/delete events with type color-coding.
-- `/admin/inquiries` — searchable, paginated table with status pipeline view; quick status change; follow-up dates.
-- `/admin/visitors` — daily log with check-out action, search, date range filter, pagination.
-- `/admin/reminders` — list grouped by Overdue / Today / Upcoming / Completed.
+Other admin pages (Notices, Homework, Calendar, Leaves, Reminders, Transport, ID Cards, Members, Faculty, Departments, Events, Gallery, Messages, Programs, Announcements, Settings, etc.) are **not refactored this phase** — they keep working as-is. They can adopt the primitives later by swapping in `<DataTable>`.
 
-## 3. Attendance Enhancements
+### 3. Executive dashboard
 
-Refactor `AdminAttendance.tsx` to add a sticky filter bar (Month / Year / Class / Section) and 5 summary cards (Present, Absent, Leave, Half Day, %), plus an analytics block (Working Days, Days Present/Absent/Leave, %) that recomputes from the filtered range. Previous/Next month chevrons keep the React Query cache; no reload.
+Replace `src/pages/admin/Dashboard.tsx` cards with a denser exec view:
+- KPIs: Total Students, Total Staff, Today's Attendance %, Fees Collected (this month), Pending Fees, Active Transport Users.
+- Existing `DashboardWidgets` (events / pending leaves / follow-ups / reminders) stays below.
+- Single parallel `Promise.all` fetch; React Query with `staleTime: 60s` to avoid refetch storms.
 
-`AttendanceCalendar` already supports month navigation — extend to accept controlled `cursor` so the filter bar drives it.
+### 4. Notification engine cleanup
 
-Parent (`ParentAttendance.tsx`) and Student (`StudentAttendance.tsx`) gain the same Month / Year selector and summary cards (reusing `AttendanceSummary`).
+Add `src/lib/notify.ts` with one `notify({type, title, body, audience, link})` helper that writes to the existing `notifications` table. Existing modules keep their own tables (notices/homework/announcements) — this is just one outbound channel so future alerts (fee due, result published, attendance absent) go through one function. No mass rewrite; document the pattern and use it in 1–2 spots (fee creation, result publish) as a reference.
 
-## 4. Dashboard Widgets
+### 5. Mobile + form polish (scoped)
 
-Add to `AdminDashboard`:
-- Upcoming Events (next 5 from `calendar_events`)
-- Pending Leave Requests (count + link)
-- Pending Admission Follow-ups (due today/overdue from `admission_inquiries.next_follow_up_date`)
-- Upcoming Reminders (next 5 pending)
+- Audit only the refactored pages above on a 375 px viewport via Playwright screenshots. Fix overflow with `overflow-x-auto` on table wrappers and stack toolbar items on `sm:`.
+- Add a tiny `FormField` wrapper that standardizes label + input + error spacing; apply in the inquiry/visitor/leave create dialogs as the reference. No global form rewrite.
 
-Add to Parent/Student dashboards: Upcoming Events strip pulled from public `calendar_events`.
+### 6. Out of scope (explicit)
 
-## 5. Routing & Sidebar
+- New tables or migrations (none needed).
+- Hiding/removing features for non-admin roles — permission *matrix* only, no UI gating yet.
+- Refactoring every page in the app — only the modules listed in §2.
+- i18n, theming, accessibility audit beyond keyboard focus.
+- Push / email / SMS delivery for notifications.
 
-`App.tsx` — add 5 admin routes. `AdminLayout` — add "Leave Management", "Calendar", "Admissions", "Visitors", "Reminders" inside the existing School ERP group, each with a Lucide icon.
+### 7. Order of execution
 
-## 6. Components / Utilities
+1. Add shared primitives + lib helpers.
+2. Refactor `AdminStudents` end-to-end as the reference implementation.
+3. Apply same pattern to the other 8 pages in §2.
+4. Replace exec dashboard.
+5. Playwright pass at 375 px + 1280 px on refactored pages; fix overflow.
+6. Smoke check: build clean, key pages load, exports download, pagination works.
 
-- `src/components/admin/calendar/MonthGrid.tsx` — reusable monthly calendar with event chips
-- `src/components/portal/AttendanceFilterBar.tsx` — Month / Year (/ Class / Section) selectors
-- `src/components/portal/AttendanceAnalytics.tsx` — Working Days / Present / Absent / Leave / %
-- `src/components/dashboard/UpcomingEventsWidget.tsx`, `PendingRemindersWidget.tsx`, `PendingLeavesWidget.tsx`, `FollowUpsWidget.tsx`
+### Technical notes
 
-## Out of scope
-Email/SMS dispatch, ICS export, recurring events, leave balance accounting, visitor QR/photo, push notifications.
+- Pagination uses Supabase `.range(from, to)` + `{count: 'exact'}` head request once per query change, reusing the existing `supabase` client. Reads stay client-side (no edge functions).
+- Debounce is local state, not URL; keeps things simple. No router changes.
+- Exports run client-side from the currently loaded page + an "Export all" that re-queries without `range`.
+- Permission matrix is data only this phase: `lib/permissions.ts` exports `PERMISSIONS: Record<Role, Action[]>`. No routes change.
 
-## Execution order
-Migration → types regen → shared components → admin pages → sidebar/routes → attendance refactor → portal updates → dashboard widgets → smoke check.
+Once approved I'll execute steps 1–6 in order and report back with a short verification summary.

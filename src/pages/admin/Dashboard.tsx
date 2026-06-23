@@ -13,6 +13,7 @@ import {
 } from '@/services/api';
  import { Skeleton } from '@/components/common/Skeleton';
  import { DashboardWidgets } from '@/components/admin/DashboardWidgets';
+ import { ExecutiveKPIs } from '@/components/admin/ExecutiveKPIs';
 
  
  interface StatCardProps {
@@ -104,6 +105,8 @@ import {
            </p>
          </div>
  
+          <ExecutiveKPIs />
+
           {/* Stats Grid */}
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
