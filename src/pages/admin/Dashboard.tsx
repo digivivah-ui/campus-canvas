@@ -13,6 +13,7 @@ import {
 } from '@/services/api';
  import { Skeleton } from '@/components/common/Skeleton';
  import { DashboardWidgets } from '@/components/admin/DashboardWidgets';
+ import { ExecutiveKPIs } from '@/components/admin/ExecutiveKPIs';
 
  
  interface StatCardProps {
