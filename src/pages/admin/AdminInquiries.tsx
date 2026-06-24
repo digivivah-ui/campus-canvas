@@ -83,6 +83,7 @@ export default function AdminInquiries() {
       const payload = { ...form, next_follow_up_date: form.next_follow_up_date || null };
       const { error } = await (supabase as any).from('admission_inquiries').insert([payload]);
       if (error) throw error;
+      notifyNewInquiry(form.student_name);
       toast({ title: 'Inquiry added' });
       setOpen(false); setForm({ student_name: '', parent_name: '', phone: '', email: '', interested_class: '', source: '', notes: '', next_follow_up_date: '' });
       load();
