@@ -19,6 +19,7 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { exportCSV, exportPDF } from '@/lib/export';
 import { handleError } from '@/lib/errors';
+import { notifyNewInquiry } from '@/lib/notify';
 
 type Status = 'new' | 'contacted' | 'follow_up' | 'interested' | 'admitted' | 'closed';
 const STATUSES: Status[] = ['new','contacted','follow_up','interested','admitted','closed'];
