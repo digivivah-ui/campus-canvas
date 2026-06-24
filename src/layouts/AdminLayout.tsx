@@ -162,7 +162,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
           {/* Navigation Groups */}
           <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
-            {navGroups.map(group => {
+            {visibleGroups.map(group => {
               const isOpen = !!openGroups[group.id];
               const hasActive = group.items.some(i => i.href === location.pathname);
               return (
