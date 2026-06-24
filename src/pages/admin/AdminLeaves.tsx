@@ -42,7 +42,13 @@ export default function AdminLeaves() {
   const review = async (table: 'student_leaves' | 'staff_leaves', id: string, newStatus: Status) => {
     const { error } = await (supabase as any).from(table).update({ status: newStatus, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
     if (error) toast({ title: 'Failed', description: error.message, variant: 'destructive' });
-    else { toast({ title: `Leave ${newStatus}` }); load(); }
+    else {
+      if (table === 'student_leaves' && (newStatus === 'approved' || newStatus === 'rejected')) {
+        const row = studentLeaves.find(r => r.id === id);
+        if (row?.student_id) notifyLeaveDecision(row.student_id, newStatus, row.from_date, row.to_date);
+      }
+      toast({ title: `Leave ${newStatus}` }); load();
+    }
   };
 
   const counts = (rows: any[]) => ({
