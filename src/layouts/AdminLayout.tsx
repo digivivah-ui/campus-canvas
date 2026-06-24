@@ -14,12 +14,13 @@ import { Button } from '@/components/ui/button';
 import { PageLoader } from '@/components/common/LoadingSpinner';
 import { cn } from '@/lib/utils';
 import { roleHome } from '@/lib/roleRoutes';
+import { can, type Action, type RoleLike } from '@/lib/permissions';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
-type NavItem = { href: string; label: string; icon: any };
+type NavItem = { href: string; label: string; icon: any; action?: Action };
 type NavGroup = { id: string; label: string; icon: any; items: NavItem[] };
 
 const navGroups: NavGroup[] = [
