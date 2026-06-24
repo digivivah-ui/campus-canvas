@@ -125,9 +125,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   if (isLoading || roleLoading) return <PageLoader />;
   if (!user) return null;
-  // Strict role isolation: non-admin authenticated users must not see the admin shell.
   if (role && role !== 'admin') return <Navigate to={roleHome(role)} replace />;
   if (!isAdmin) return <Navigate to="/admin" replace />;
+
+  // Filter sidebar by permissions. Admin currently has '*'; principal/accountant
+  // are matrix-ready for Phase 7 multi-tenant — they'll see only allowed items.
+  const visibleGroups = navGroups
+    .map(g => ({ ...g, items: g.items.filter(i => !i.action || can(role as RoleLike, i.action)) }))
+    .filter(g => g.items.length > 0);
 
   const handleSignOut = async () => { await signOut(); navigate('/admin'); };
   const toggleGroup = (id: string) => setOpenGroups(p => ({ ...p, [id]: !p[id] }));
