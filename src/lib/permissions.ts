@@ -1,49 +1,83 @@
 import type { AppRole } from '@/hooks/useRole';
 
 /**
- * Centralized permission matrix. Future phases will add UI gating.
- * For now this is the single source of truth for what each role *can* do.
+ * Centralized permission matrix. Admin has '*' (all).
+ * Principal / accountant rows are matrix-ready but currently no users
+ * carry these DB roles — they activate in Phase 7 (multi-tenant).
  */
 export type Action =
+  | 'dashboard.read'
   | 'students.read' | 'students.write'
   | 'staff.read' | 'staff.write'
   | 'attendance.read' | 'attendance.write'
   | 'finance.read' | 'finance.write'
   | 'results.read' | 'results.write'
+  | 'exams.read' | 'exams.write'
   | 'inquiries.read' | 'inquiries.write'
   | 'visitors.read' | 'visitors.write'
   | 'certificates.read' | 'certificates.write'
   | 'notifications.read' | 'notifications.write'
+  | 'notices.read' | 'notices.write'
+  | 'homework.read' | 'homework.write'
+  | 'leaves.read' | 'leaves.write'
+  | 'calendar.read' | 'calendar.write'
+  | 'transport.read' | 'transport.write'
+  | 'idcards.read' | 'idcards.write'
+  | 'reminders.read' | 'reminders.write'
+  | 'analytics.read'
+  | 'defaulters.read'
+  | 'reports.read'
+  | 'messages.read' | 'messages.write'
+  | 'website.read' | 'website.write'
   | 'settings.write';
 
-const ADMIN_ALL: Action[] = [
+const ALL: Action[] = [
+  'dashboard.read',
   'students.read','students.write','staff.read','staff.write',
   'attendance.read','attendance.write','finance.read','finance.write',
-  'results.read','results.write','inquiries.read','inquiries.write',
-  'visitors.read','visitors.write','certificates.read','certificates.write',
-  'notifications.read','notifications.write','settings.write',
+  'results.read','results.write','exams.read','exams.write',
+  'inquiries.read','inquiries.write','visitors.read','visitors.write',
+  'certificates.read','certificates.write','notifications.read','notifications.write',
+  'notices.read','notices.write','homework.read','homework.write',
+  'leaves.read','leaves.write','calendar.read','calendar.write',
+  'transport.read','transport.write','idcards.read','idcards.write',
+  'reminders.read','reminders.write','analytics.read','defaulters.read',
+  'reports.read','messages.read','messages.write',
+  'website.read','website.write','settings.write',
 ];
 
 const PRINCIPAL: Action[] = [
-  'students.read','staff.read','attendance.read','attendance.write',
-  'finance.read','results.read','results.write','inquiries.read',
-  'visitors.read','certificates.read','notifications.read','notifications.write',
+  'dashboard.read',
+  'students.read','staff.read',
+  'attendance.read','attendance.write',
+  'results.read','results.write','exams.read',
+  'certificates.read','certificates.write',
+  'notifications.read','notifications.write',
+  'notices.read','notices.write','homework.read',
+  'leaves.read','leaves.write','calendar.read','calendar.write',
+  'inquiries.read','inquiries.write','visitors.read','visitors.write',
+  'reminders.read','analytics.read','reports.read','messages.read',
 ];
 
 const ACCOUNTANT: Action[] = [
-  'students.read','finance.read','finance.write','notifications.read',
+  'dashboard.read',
+  'students.read','finance.read','finance.write','defaulters.read',
+  'reports.read','notifications.read','reminders.read',
 ];
 
 const TEACHER: Action[] = [
-  'students.read','attendance.read','attendance.write',
-  'results.read','results.write','notifications.read',
+  'dashboard.read','students.read',
+  'attendance.read','attendance.write',
+  'results.read','results.write',
+  'homework.read','homework.write',
+  'notices.read','notifications.read',
 ];
 
-const PARENT: Action[] = ['attendance.read','finance.read','results.read','notifications.read'];
-const STUDENT: Action[] = ['attendance.read','finance.read','results.read','notifications.read'];
+const PARENT: Action[] = ['attendance.read','finance.read','results.read','notifications.read','notices.read'];
+const STUDENT: Action[] = ['attendance.read','finance.read','results.read','notifications.read','notices.read'];
 
-export const PERMISSIONS: Record<Exclude<AppRole, null | 'member'> | 'principal' | 'accountant', Action[]> = {
-  admin: ADMIN_ALL,
+export const PERMISSIONS: Record<string, Action[]> = {
+  admin: ALL,
   principal: PRINCIPAL,
   accountant: ACCOUNTANT,
   teacher: TEACHER,
@@ -51,7 +85,9 @@ export const PERMISSIONS: Record<Exclude<AppRole, null | 'member'> | 'principal'
   student: STUDENT,
 };
 
-export function can(role: AppRole | 'principal' | 'accountant' | null, action: Action): boolean {
+export type RoleLike = AppRole | 'principal' | 'accountant' | null;
+
+export function can(role: RoleLike, action: Action): boolean {
   if (!role || role === 'member') return false;
-  return (PERMISSIONS[role as keyof typeof PERMISSIONS] ?? []).includes(action);
+  return (PERMISSIONS[role] ?? []).includes(action);
 }
