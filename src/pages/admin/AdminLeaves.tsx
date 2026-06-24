@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { CalendarRange, Check, X } from 'lucide-react';
+import { notifyLeaveDecision } from '@/lib/notify';
 
 type Status = 'pending' | 'approved' | 'rejected';
 const TONE: Record<Status, string> = {
