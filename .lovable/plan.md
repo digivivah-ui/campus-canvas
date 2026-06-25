@@ -1,89 +1,66 @@
-# Phase 6.9 — Standardization, Permissions & Automation
+# Phase 6.95 — Final Standardization & Production Readiness
 
-Scope: no new business modules. Apply shared primitives everywhere, harden permissions, upgrade dashboard, wire automated notifications.
+Scope is hardening only — no new modules, no schema changes. Work is grouped into 5 batches that ship sequentially so each can be verified before the next.
 
-## 1. Module Standardization
+## Batch 1 — Table standardization (shared infra rollout)
 
-Refactor each admin page to use shared `DataTable`, `DataToolbar`, `Pagination`, `EmptyState`, `TableSkeleton`, `ErrorState`, and `exportCSV`/`exportPDF`. Add debounced search, filters, sort, page-size (10/25/50/100).
+Refactor these admin pages to use `DataTable`, `DataToolbar`, `Pagination`, `EmptyState`, `TableSkeleton`, `ErrorState`, plus `useDebouncedValue`, `exportCSV`, `exportPDF`:
 
-Targets (in this order):
-- `AdminStudents.tsx` — search by name/admission, filter class/section/status
-- `AdminStaff.tsx` — search name/email, filter role/department/status
-- `AdminAttendance.tsx` — date + class filter, status filter, export day register
-- `AdminFinance.tsx` — date range, payment-mode filter, CSV/PDF of collection log
-- `AdminResults.tsx` — exam + class filter, search student
-- `AdminCertificates.tsx` — type + date filter, search recipient
-- `AdminNotifications.tsx` — audience + type filter, search title
+- `AdminStudents.tsx`
+- `AdminStaff.tsx`
+- `AdminAttendance.tsx` (and `AdminStaffAttendance.tsx`)
+- `AdminFinance.tsx`
+- `AdminResults.tsx`
+- `AdminCertificates.tsx`
+- `AdminNotifications.tsx`
 
-Each becomes a thin page: `DataToolbar` on top, `DataTable` in middle, `Pagination` at bottom. Module-specific dialogs (add/edit) stay untouched.
+Each page keeps its existing dialogs/forms and business logic untouched. Only the list surface changes: debounced search, filter selects, sortable headers (client-side via small `useSort` helper), pagination with page-size 10/25/50/100, CSV + PDF export buttons in the toolbar, and the three non-data states routed through the shared components.
 
-## 2. Executive Dashboard V2
+## Batch 2 — Notification automation
 
-Extend `ExecutiveKPIs.tsx` with 3 more tiles (run inside the same `Promise.all`):
-- New Admission Leads (this month, `admission_inquiries`)
-- Upcoming Events (next 7 days, `calendar_events`)
-- Pending Leave Requests (`student_leaves` + `staff_leaves` where status='pending')
+Wire remaining domain events through existing `src/lib/notify.ts` helpers. No new tables.
 
-Reorganize `Dashboard.tsx` into:
-1. `ExecutiveKPIs` (9 tiles, responsive grid 2/3/3)
-2. `DashboardWidgets` (existing)
-3. Quick-links row (unchanged)
+- Attendance marked / student absent → `TeacherAttendance.tsx`, `AdminAttendance.tsx` save handlers (notify parent + student of each absent record; summary notify to admins).
+- Fee paid → `AdminFinance.tsx` collection insert (notify student + parent).
+- Fee due → reuse `AdminReminders.tsx` send action (notify defaulters' parents).
+- Result published → `AdminResults.tsx` publish action (notify section parents + students).
+- Homework created → `AdminHomework.tsx` and `TeacherHomework.tsx` insert (notify section).
+- Transport route assigned / updated → `AdminTransport.tsx` student assignment save (notify parent + student).
 
-## 3. Permission Enforcement
+Each call site uses the existing `notifyParentOfStudent` / `notifySection` / `notifyAdmins` helpers; failures are swallowed so the primary write never breaks.
 
-Backend RLS stays the source of truth. UI gating layer:
+## Batch 3 — Permission & mobile audit
 
-- New `src/components/RequirePermission.tsx` — wraps a route, calls `can(role, action)`, redirects to role home if denied.
-- New `src/hooks/useCan.ts` — `useCan(action)` returns boolean using current `useRole`.
-- Extend `src/lib/permissions.ts` with the new actions used by routes (`dashboard.read`, `calendar.read`, `transport.read`, `leaves.read/write`, `inquiries.read/write`, `visitors.read/write`, `reminders.read/write`, `homework.write`, `events.write`, `gallery.write`, `homepage.write`).
-- Update `App.tsx` admin routes: wrap each admin route in `RequirePermission` with the right action. Admin already has `*`.
-- Update `AdminLayout.tsx` sidebar: filter menu items by `can(role, action)`. Hide groups that have zero visible items.
+- Wrap remaining admin routes in `App.tsx` with `<RequirePermission action="…" />` matching the matrix in `src/lib/permissions.ts`.
+- Hide create/edit/delete buttons via `useCan()` on pages that expose them (Students, Staff, Finance, Results, Certificates, Homework, Transport, Notifications, Inquiries, Visitors, Leaves, Calendar, Reminders).
+- Mobile pass at 375px via Playwright on: Students, Attendance, Finance, Results, Staff, Transport, Certificates, parent + student portals. Fix any horizontal overflow by enforcing `overflow-x-auto` wrappers (already in `DataTable`) and stacking toolbar filters with `flex-wrap`.
 
-Role allowances (matches user spec):
-- Principal: dashboard, students, staff (read), attendance (rw), results (rw), reports, certificates, notifications, calendar, leaves, inquiries, visitors. No settings/site/homepage/about/gallery.
-- Accountant: dashboard, finance, defaulters, students (read), reports. No academic, no settings.
-- Teacher: dashboard, teacher portal (existing).
-- Parent/Student: unchanged (own portal only).
+## Batch 4 — Export, dashboard, data quality
 
-Currently only `admin` role exists in DB; principal/accountant are matrix-ready but never assigned — they remain inert until Phase 7. Document this in plan.md.
+- Confirm every refactored module exposes CSV + PDF through `src/lib/export.ts` with consistent column ordering and filename `<module>-YYYY-MM-DD`.
+- `ExecutiveKPIs.tsx`: keep the `Promise.all` fan-out, switch each tile to `head:true, count:'exact'` queries (no row payloads), add a 60s in-memory cache keyed by metric to avoid refetch storms on re-render.
+- Spot-check totals against raw queries (fees collected vs `fees_collection`, attendance % vs `attendance`, defaulters count) via `supabase--read_query` and patch any aggregation drift.
 
-## 4. Notification Automation
+## Batch 5 — Cleanup
 
-Use existing `src/lib/notify.ts`. Add thin call sites at action boundaries (NOT triggers — keep client-side for now, edge functions in Phase 7):
+- Remove local skeleton/empty/error helpers superseded by shared components in the refactored pages.
+- Delete unused imports surfaced by tsgo after refactors.
+- Drop `src/components/portal/EmptyState.tsx` only if no portal page still imports it (keep otherwise — different API).
+- Leave `src/services/api.ts` and other shared utilities alone unless a dead export is proven unused.
 
-| Event | Hook location | Audience |
-|---|---|---|
-| Attendance marked (per class) | `AdminAttendance` save handler | parents of section |
-| Student absent | same, conditional on status='absent' | parent of student |
-| Fee paid | `AdminFinance` add-payment handler | parent of student |
-| Fee due (manual trigger button) | `AdminDefaulters` "Send reminders" | parents of defaulters |
-| Result published | `AdminResults` publish handler | parents of class |
-| Homework added | `AdminHomework` create | parents of section |
-| Leave approved/rejected | `AdminLeaves` status change | requester |
-| New inquiry | `AdminInquiries` create | admins |
-| Transport route assigned | `AdminTransport` assignment save | parent of student |
+## Out of scope
 
-Add helpers in `src/lib/notify.ts`: `notifyParentsOfSection(sectionId, payload)`, `notifyParentOfStudent(studentId, payload)`, `notifyAdmins(payload)` — each resolves user_ids via `students.parent_auth_user_id` / `user_roles`.
+- New tables, RLS changes, edge functions, cron, push/email/SMS — Phase 7.
+- Granting `principal` / `accountant` DB roles — matrix stays inert until multi-tenant.
+- Portal (parent/student/teacher) table refactors — those use card/list layouts, not `DataTable`.
 
-## 5. Audit & Cleanup
+## Technical details
 
-- Re-check refactored pages at 375px via Playwright, 1 screenshot each.
-- Remove now-dead local Skeleton/Empty helpers inside refactored pages.
-- Keep `src/components/portal/EmptyState.tsx` (used by parent/student portals — different API).
+- Sorting: tiny generic `useSort<T>(rows, key, dir)` hook inside `src/hooks/` to avoid per-page reimplementation; falls back to identity when no sort key is selected.
+- Pagination: client-side slice for ≤500 rows (current dataset size); server-side range pagination is deferred to Phase 7 multi-tenant.
+- Notifications: every wiring point is fire-and-forget (`void notifyX(...).catch(() => {})`) — never blocks the user action.
+- No migrations. No edits to `src/integrations/supabase/client.ts` or `types.ts`.
 
-## Out of scope (Phase 7)
-- Server-side cron notifications (fee-due reminders, calendar reminders).
-- Granting principal/accountant roles in DB; UI matrix is ready but no users carry these roles yet.
-- Push/email/SMS delivery.
-- New tables.
+## Estimated impact
 
-## Execution order
-1. Extend `permissions.ts` + add `useCan` + `RequirePermission`.
-2. Wrap `App.tsx` admin routes; filter `AdminLayout` sidebar.
-3. Refactor `AdminStudents` as reference; replicate to remaining 6 pages.
-4. Extend `ExecutiveKPIs` + reflow `Dashboard.tsx`.
-5. Add notification helpers + wire call sites.
-6. Playwright pass on 375px for refactored pages.
-7. Smoke-test admin/parent/student flows.
-
-Estimated touch: ~20 files edited, ~3 created, 0 migrations.
+~14 files edited, 1 hook created, 0 migrations, 0 new dependencies. Verified via tsgo + Playwright mobile screenshots on 4 representative routes.
