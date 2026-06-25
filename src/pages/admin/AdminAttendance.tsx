@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { CalendarCheck, Users, Percent, Download, Save, UserX, CalendarDays } from 'lucide-react';
+import { notifyAttendanceMarked, notifyStudentAbsent } from '@/lib/notify';
 
 type Status = 'present' | 'absent' | 'leave' | 'half_day';
 const STATUS_META: Record<Status, { label: string; short: string; cls: string }> = {
@@ -97,8 +98,12 @@ export default function AdminAttendance() {
     }));
     const { error } = await supabase.from('attendance').upsert(rows, { onConflict: 'student_id,date' });
     setSaving(false);
-    if (error) toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
-    else toast({ title: 'Attendance saved', description: `${rows.length} records for ${date}` });
+    if (error) { toast({ title: 'Save failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Attendance saved', description: `${rows.length} records for ${date}` });
+    // Fire-and-forget notifications
+    const sectionForNotify = sectionId !== 'all' ? sectionId : (students[0]?.section_id ?? null);
+    if (sectionForNotify) void notifyAttendanceMarked(sectionForNotify, date).catch(() => {});
+    rows.filter(r => r.status === 'absent').forEach(r => { void notifyStudentAbsent(r.student_id, date).catch(() => {}); });
   };
 
   const exportCsv = () => {

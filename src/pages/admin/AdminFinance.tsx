@@ -19,6 +19,7 @@ import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-f
 import { useCourseStructure } from '@/hooks/useCourseStructure';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useInstitution } from '@/hooks/useInstitution';
+import { notifyFeePaid } from '@/lib/notify';
 
 const PAGE_SIZE = 10;
 const PIE_COLORS = ['hsl(var(--primary))', 'hsl(0 84% 60%)', 'hsl(45 93% 47%)', 'hsl(142 76% 36%)', 'hsl(271 91% 65%)', 'hsl(199 89% 48%)', 'hsl(25 95% 53%)'];
@@ -458,11 +459,16 @@ function FeesTab({ fees, courses, months6 }: { fees: Fee[]; courses: { id: strin
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = { amount: Number(form.amount), date: form.date, student_name: form.student_name || null, course: form.course || null };
-      if (editItem) { const { error } = await supabase.from('fees_collection').update(payload).eq('id', editItem.id); if (error) throw error; }
-      else { const { error } = await supabase.from('fees_collection').insert(payload); if (error) throw error; }
+      const payload: any = { amount: Number(form.amount), date: form.date, student_name: form.student_name || null, course: form.course || null };
+      if (editItem) { const { error } = await supabase.from('fees_collection').update(payload).eq('id', editItem.id); if (error) throw error; return null; }
+      const { data, error } = await supabase.from('fees_collection').insert(payload).select('id,student_id,amount').single();
+      if (error) throw error;
+      return data;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['fees_collection'] }); setOpen(false); setEditItem(null); toast({ title: 'Saved' }); },
+    onSuccess: (created) => {
+      qc.invalidateQueries({ queryKey: ['fees_collection'] }); setOpen(false); setEditItem(null); toast({ title: 'Saved' });
+      if (created?.student_id) { void notifyFeePaid(created.student_id, Number(created.amount)).catch(() => {}); }
+    },
     onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
   const deleteMutation = useMutation({

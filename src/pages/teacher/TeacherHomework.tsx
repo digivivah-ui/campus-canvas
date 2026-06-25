@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTeacherCtx } from '@/contexts/TeacherContext';
 import { PortalSkeleton } from '@/components/portal/PortalSkeleton';
 import { Trash2 } from 'lucide-react';
+import { notifyHomeworkAdded } from '@/lib/notify';
 
 export default function TeacherHomework() {
   const { loading, assignments, classMap, sectionMap, subjectMap } = useTeacherCtx();
@@ -61,6 +62,7 @@ export default function TeacherHomework() {
     if (error) return toast({ title: 'Failed', description: error.message, variant: 'destructive' });
     setTitle(''); setDescription('');
     toast({ title: 'Homework posted' });
+    if (choice.section_id) void notifyHomeworkAdded(choice.section_id, subject, dueDate).catch(() => {});
     reload();
   };
 
