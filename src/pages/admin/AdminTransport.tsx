@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
+import { notifyTransportAssigned } from '@/lib/notify';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -365,7 +366,10 @@ function AssignmentDialog({ students, routes, assignments, refresh }: { students
     if (!form.student_id || !form.route_id) return toast.error('Select student & route');
     const { error } = await supabase.from('student_transport').insert(form as any);
     if (error) return toast.error(error.message);
-    toast.success('Assigned'); setOpen(false); setForm({ student_id: '', route_id: '', pickup_point: '', transport_fee: 0 }); refresh();
+    toast.success('Assigned');
+    const routeName = routes.find(r => r.id === form.route_id)?.route_name ?? 'route';
+    void notifyTransportAssigned(form.student_id, routeName).catch(() => {});
+    setOpen(false); setForm({ student_id: '', route_id: '', pickup_point: '', transport_fee: 0 }); refresh();
   };
 
   return (

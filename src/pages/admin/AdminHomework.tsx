@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BookOpen, Send, Trash2, Paperclip, Search, CalendarClock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { notifyHomeworkAdded } from '@/lib/notify';
 
 export default function AdminHomework() {
   const { toast } = useToast();
@@ -57,6 +58,7 @@ export default function AdminHomework() {
     setLoading(false);
     if (error) return toast({ title: 'Failed', description: error.message, variant: 'destructive' });
     toast({ title: 'Homework published' });
+    if (sectionId) void notifyHomeworkAdded(sectionId, subject.trim(), dueDate).catch(() => {});
     setTitle(''); setSubject(''); setDescription(''); setAttachment(''); setClassId(''); setSectionId(''); setDueDate('');
     load();
   };

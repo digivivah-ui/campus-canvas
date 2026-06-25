@@ -9,6 +9,7 @@ import { useTeacherCtx } from '@/contexts/TeacherContext';
 import { PortalSkeleton } from '@/components/portal/PortalSkeleton';
 import { EmptyState } from '@/components/portal/EmptyState';
 import { CalendarCheck } from 'lucide-react';
+import { notifyAttendanceMarked, notifyStudentAbsent } from '@/lib/notify';
 
 type Status = 'present' | 'absent' | 'leave' | 'half_day';
 const COLORS: Record<Status, string> = {
@@ -77,8 +78,10 @@ export default function TeacherAttendance() {
     }));
     const { error } = await supabase.from('attendance').upsert(rows, { onConflict: 'student_id,date' });
     setSaving(false);
-    if (error) toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
-    else toast({ title: 'Attendance saved', description: `${rows.length} students updated.` });
+    if (error) { toast({ title: 'Save failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Attendance saved', description: `${rows.length} students updated.` });
+    if (selected.section_id) void notifyAttendanceMarked(selected.section_id, date).catch(() => {});
+    rows.filter(r => r.status === 'absent').forEach(r => { void notifyStudentAbsent(r.student_id, date).catch(() => {}); });
   };
 
   if (tLoad) return <PortalSkeleton />;

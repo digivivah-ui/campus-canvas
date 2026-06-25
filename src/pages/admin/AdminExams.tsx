@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Pencil, Trash2, Save, BookOpen, FileText, ClipboardEdit, Loader2 } from 'lucide-react';
+import { notifyResultPublished } from '@/lib/notify';
 
 interface ExamRow {
   id: string; name: string; exam_type: string; class_id: string; section_id: string | null;
@@ -74,7 +75,11 @@ function ExamsTab() {
   const togglePublish = async (e: ExamRow) => {
     const { error } = await supabase.from('exams').update({ is_published: !e.is_published }).eq('id', e.id);
     if (error) toast({ title: 'Failed', description: error.message, variant: 'destructive' });
-    else { toast({ title: e.is_published ? 'Unpublished' : 'Published', description: e.name }); load(); }
+    else {
+      toast({ title: e.is_published ? 'Unpublished' : 'Published', description: e.name });
+      if (!e.is_published) void notifyResultPublished(e.class_id, e.name).catch(() => {});
+      load();
+    }
   };
 
   return (
