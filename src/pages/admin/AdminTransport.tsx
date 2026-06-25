@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
+import { notifyTransportAssigned } from '@/lib/notify';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
