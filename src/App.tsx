@@ -81,6 +81,8 @@ import TeacherHomework from "./pages/teacher/TeacherHomework";
 import TeacherNotices from "./pages/teacher/TeacherNotices";
 import TeacherProfile from "./pages/teacher/TeacherProfile";
 import { RequireRole } from "@/components/RequireRole";
+import { RequirePermission } from "@/components/RequirePermission";
+import type { Action } from "@/lib/permissions";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 
 const queryClient = new QueryClient();
@@ -106,43 +108,47 @@ const App = () => (
               
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminLogin />} />
-              <Route path="/admin/dashboard" element={<Dashboard />} />
-              <Route path="/admin/settings" element={<AdminSettings />} />
-              <Route path="/admin/stats" element={<AdminStats />} />
-              <Route path="/admin/homepage" element={<AdminHomepage />} />
-              <Route path="/admin/about" element={<AdminAbout />} />
-              <Route path="/admin/departments" element={<AdminDepartments />} />
-              <Route path="/admin/members" element={<AdminMembers />} />
-              <Route path="/admin/faculty" element={<AdminFaculty />} />
-              <Route path="/admin/events" element={<AdminEvents />} />
-              <Route path="/admin/gallery" element={<AdminGallery />} />
-              <Route path="/admin/social-links" element={<AdminSocialLinks />} />
-              <Route path="/admin/explore-videos" element={<AdminExploreVideos />} />
-              <Route path="/admin/programs" element={<AdminPrograms />} />
-              <Route path="/admin/finance" element={<AdminFinance />} />
-              <Route path="/admin/analytics" element={<AdminAnalytics />} />
-              <Route path="/admin/course-structure" element={<AdminCourseStructure />} />
-              <Route path="/admin/students" element={<AdminStudents />} />
-              <Route path="/admin/defaulters" element={<AdminDefaulters />} />
-              <Route path="/admin/attendance" element={<AdminAttendance />} />
-              <Route path="/admin/exams" element={<AdminExams />} />
-              <Route path="/admin/results" element={<AdminResults />} />
-              <Route path="/admin/notifications" element={<AdminNotifications />} />
-              <Route path="/admin/notices" element={<AdminNotices />} />
-              <Route path="/admin/homework" element={<AdminHomework />} />
-              <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-              <Route path="/admin/staff" element={<AdminStaff />} />
-              <Route path="/admin/teacher-assignments" element={<AdminTeacherAssignments />} />
-              <Route path="/admin/staff-attendance" element={<AdminStaffAttendance />} />
-              <Route path="/admin/messages" element={<AdminMessages />} />
-              <Route path="/admin/transport" element={<AdminTransport />} />
-              <Route path="/admin/id-cards" element={<AdminIdCards />} />
-              <Route path="/admin/certificates" element={<AdminCertificates />} />
-              <Route path="/admin/leaves" element={<AdminLeaves />} />
-              <Route path="/admin/calendar" element={<AdminCalendar />} />
-              <Route path="/admin/inquiries" element={<AdminInquiries />} />
-              <Route path="/admin/visitors" element={<AdminVisitors />} />
-              <Route path="/admin/reminders" element={<AdminReminders />} />
+              {([
+                ['dashboard', <Dashboard />, 'dashboard.read'],
+                ['settings', <AdminSettings />, 'settings.write'],
+                ['stats', <AdminStats />, 'website.write'],
+                ['homepage', <AdminHomepage />, 'website.write'],
+                ['about', <AdminAbout />, 'website.write'],
+                ['departments', <AdminDepartments />, 'website.write'],
+                ['members', <AdminMembers />, 'website.write'],
+                ['faculty', <AdminFaculty />, 'website.write'],
+                ['events', <AdminEvents />, 'website.write'],
+                ['gallery', <AdminGallery />, 'website.write'],
+                ['social-links', <AdminSocialLinks />, 'website.write'],
+                ['explore-videos', <AdminExploreVideos />, 'website.write'],
+                ['programs', <AdminPrograms />, 'website.write'],
+                ['finance', <AdminFinance />, 'finance.read'],
+                ['analytics', <AdminAnalytics />, 'analytics.read'],
+                ['course-structure', <AdminCourseStructure />, 'settings.write'],
+                ['students', <AdminStudents />, 'students.read'],
+                ['defaulters', <AdminDefaulters />, 'defaulters.read'],
+                ['attendance', <AdminAttendance />, 'attendance.read'],
+                ['exams', <AdminExams />, 'exams.read'],
+                ['results', <AdminResults />, 'results.read'],
+                ['notifications', <AdminNotifications />, 'notifications.read'],
+                ['notices', <AdminNotices />, 'notices.read'],
+                ['homework', <AdminHomework />, 'homework.read'],
+                ['announcements', <AdminAnnouncements />, 'notices.write'],
+                ['staff', <AdminStaff />, 'staff.read'],
+                ['teacher-assignments', <AdminTeacherAssignments />, 'staff.write'],
+                ['staff-attendance', <AdminStaffAttendance />, 'attendance.read'],
+                ['messages', <AdminMessages />, 'messages.read'],
+                ['transport', <AdminTransport />, 'transport.read'],
+                ['id-cards', <AdminIdCards />, 'idcards.read'],
+                ['certificates', <AdminCertificates />, 'certificates.read'],
+                ['leaves', <AdminLeaves />, 'leaves.read'],
+                ['calendar', <AdminCalendar />, 'calendar.read'],
+                ['inquiries', <AdminInquiries />, 'inquiries.read'],
+                ['visitors', <AdminVisitors />, 'visitors.read'],
+                ['reminders', <AdminReminders />, 'reminders.read'],
+              ] as Array<[string, JSX.Element, Action]>).map(([path, element, action]) => (
+                <Route key={path} path={`/admin/${path}`} element={<RequirePermission action={action}>{element}</RequirePermission>} />
+              ))}
 
 
               {/* Parent Portal */}
